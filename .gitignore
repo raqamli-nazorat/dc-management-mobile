@@ -1,0 +1,11 @@
+build/
+.dart_tool/
+.env
+.vscode/
+/ios
+/android
+/linux
+/macos
+/web
+/windows
+/.idea
