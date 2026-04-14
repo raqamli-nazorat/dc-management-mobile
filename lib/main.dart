@@ -1,8 +1,53 @@
+import 'package:dcmanagement/screens/login_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'app/main_app.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ProviderScope(child: MainApp()));
+void main() async {
+  // push notification uchun access so'raydi
+  // WidgetsFlutterBinding.ensureInitialized();
+
+  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  runApp(MyApp());
 }
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(textTheme: GoogleFonts.manropeTextTheme()),
+      home: LoginScreen(),
+    );
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
