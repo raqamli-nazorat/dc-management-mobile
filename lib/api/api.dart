@@ -1,5 +1,16 @@
+import 'package:dcmanagement/models/user_model.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+
+/// Thrown when the backend returns success=false.
+class ApiException implements Exception {
+  final String message;
+  final int statusCode;
+  ApiException(this.message, this.statusCode);
+
+  @override
+  String toString() => message;
+}
 
 class ApiService {
   final Dio _dio;
@@ -13,6 +24,25 @@ class ApiService {
             validateStatus: (status) => status != null && status < 500,
           ),
         );
+
+  Options _auth(String token) =>
+      Options(headers: {'Authorization': 'Bearer $token'});
+
+  /// Unwraps { "data": ..., "error": ..., "success": bool }.
+  /// Throws [ApiException] when success=false.
+  dynamic _unwrap(Map<String, dynamic> body) {
+    final success = body['success'] as bool? ?? false;
+    if (!success) {
+      final error = body['error'] as Map<String, dynamic>?;
+      final msg =
+          error?['errorMsg'] as String? ?? "Noma'lum xatolik yuz berdi";
+      final code = (error?['errorId'] as num?)?.toInt() ?? 0;
+      throw ApiException(msg, code);
+    }
+    return body['data'];
+  }
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> login(String username, String password) async {
     debugPrint('=== LOGIN REQUEST ===');
@@ -37,6 +67,38 @@ class ApiService {
       rethrow;
     }
   }
+
+  // ── Users ─────────────────────────────────────────────────────────────────
+
+  /// Returns all users. Throws [ApiException] with statusCode=403 if the
+  /// current user does not have permission.
+  Future<List<UserModel>> getUsers(String token) async {
+    final response = await _dio.get('users/', options: _auth(token));
+    final body = response.data as Map<String, dynamic>;
+    final data = _unwrap(body) as Map<String, dynamic>? ?? {};
+    final results = data['results'] as List? ?? [];
+    return results
+        .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Returns a single user by id. Throws [ApiException] on 403/404.
+  Future<UserModel> getUserDetail(String token, int id) async {
+    final response = await _dio.get('users/$id/', options: _auth(token));
+    final body = response.data as Map<String, dynamic>;
+    final data = _unwrap(body) as Map<String, dynamic>? ?? {};
+    return UserModel.fromJson(data);
+  }
+
+  /// Returns the currently authenticated user's profile.
+  Future<UserModel> getMe(String token) async {
+    final response = await _dio.get('users/me/', options: _auth(token));
+    final body = response.data as Map<String, dynamic>;
+    final data = _unwrap(body) as Map<String, dynamic>? ?? {};
+    return UserModel.fromJson(data);
+  }
+
+  // ── Legacy ────────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> getProfile(String token) async {
     final response = await _dio.get(

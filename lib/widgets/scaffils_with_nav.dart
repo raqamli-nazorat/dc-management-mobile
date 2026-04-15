@@ -1,13 +1,11 @@
+import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-// Record o'rniga class — chunki icon turi mixed (IconData yoki rasm)
 class _TabItem {
   final String label;
   final String path;
-
-  // Material icon ishlatmoqchi bo'lsang shu ikkalasini to'ldir
   final IconData? activeIcon;
   final IconData? inactiveIcon;
 
@@ -57,7 +55,6 @@ class ScaffoldWithNavBar extends StatelessWidget {
   ];
 
   static const _activeColor = Color(0xFF5B6EF5);
-  static const _inactiveColor = Color(0xFF9E9E9E);
   static const _activeBg = Color(0x155B6EF5);
 
   int _currentIndex(BuildContext context) {
@@ -66,30 +63,23 @@ class ScaffoldWithNavBar extends StatelessWidget {
     return i < 0 ? 0 : i;
   }
 
-  // Icon yoki rasm qaytaradigan helper
-  Widget _buildIcon(_TabItem tab, bool isActive) {
-    return Icon(
-      isActive ? tab.activeIcon : tab.inactiveIcon,
-      size: 22,
-      color: isActive ? _activeColor : _inactiveColor,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final current = _currentIndex(context);
+    final colors = AppColors.of(context);
+    final inactiveColor = colors.iconSub;
 
     return Scaffold(
       body: child,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.backgroundBase,
           border: Border(
-            top: BorderSide(color: Colors.grey.shade200, width: 0.5),
+            top: BorderSide(color: colors.strokeSub, width: 0.5),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 16,
               offset: const Offset(0, -4),
             ),
@@ -119,10 +109,11 @@ class ScaffoldWithNavBar extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          _buildIcon(
-                            tab,
-                            isActive,
-                          ), // ✅ shu yerda qaror qilinadi
+                          Icon(
+                            isActive ? tab.activeIcon : tab.inactiveIcon,
+                            size: 22,
+                            color: isActive ? _activeColor : inactiveColor,
+                          ),
                           const SizedBox(height: 4),
                           Text(
                             tab.label,
@@ -131,7 +122,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
                               fontWeight: isActive
                                   ? FontWeight.w600
                                   : FontWeight.w400,
-                              color: isActive ? _activeColor : _inactiveColor,
+                              color: isActive ? _activeColor : inactiveColor,
                             ),
                           ),
                           const SizedBox(height: 2),

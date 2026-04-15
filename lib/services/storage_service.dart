@@ -27,4 +27,6 @@ class StorageService {
   // Convenience getters (optional)
   static const tokenKey = _tokenKey;
   static const userKey = _userKey;
+  static const pinKey = 'pin_code';
+  static const pinEnabledKey = 'pin_enabled';
 }

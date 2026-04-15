@@ -25,12 +25,14 @@ class AuthService {
       }
 
       final innerData = response['data'] as Map<String, dynamic>?;
-      debugPrint('=== AUTH SERVICE: inner data keys: ${innerData?.keys.toList()} ===');
+      debugPrint(
+        '=== AUTH SERVICE: inner data keys: ${innerData?.keys.toList()} ===',
+      );
 
       final accessToken = innerData?['access'] as String?;
       final refreshToken = innerData?['refresh'] as String?;
       final user = innerData?['user'] as Map<String, dynamic>?;
-
+      print(refreshToken);
       debugPrint('=== AUTH SERVICE: access token = $accessToken ===');
       debugPrint('=== AUTH SERVICE: user = $user ===');
 
@@ -47,7 +49,9 @@ class AuthService {
         await _storage.saveString(StorageService.userKey, jsonEncode(user));
       }
 
-      debugPrint('=== AUTH SERVICE: tokenlar saqlandi, login muvaffaqiyatli ===');
+      debugPrint(
+        '=== AUTH SERVICE: tokenlar saqlandi, login muvaffaqiyatli ===',
+      );
       return true;
     } catch (e, stack) {
       debugPrint('=== AUTH SERVICE ERROR: $e ===');
