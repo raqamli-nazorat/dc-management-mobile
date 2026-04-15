@@ -7,7 +7,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Bosh sahifa")),
+      appBar: AppBar(title: const Text("Moliya")),
       body: const Center(child: Text("Xush kelibsiz!")),
     );
   }

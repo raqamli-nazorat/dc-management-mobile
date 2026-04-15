@@ -23,7 +23,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
 
   static const _tabs = [
     _TabItem(
-      label: 'Ishchilar',
+      label: 'Foydalanuvchilar',
       path: '/users',
       activeIcon: LucideIcons.users,
       inactiveIcon: LucideIcons.users,
