@@ -1,93 +1,69 @@
 import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/services/auth_service.dart';
-import 'package:dcmanagement/services/pin_session.dart';
-import 'package:dcmanagement/services/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-class PinLockScreen extends StatefulWidget {
-  const PinLockScreen({super.key});
+class PinScreen extends StatefulWidget {
+  const PinScreen({super.key});
 
   @override
-  State<PinLockScreen> createState() => _PinLockScreenState();
+  State<PinScreen> createState() => _PinScreenState();
 }
 
-class _PinLockScreenState extends State<PinLockScreen>
-    with SingleTickerProviderStateMixin {
-  String _current = '';
-  bool _hasError = false;
-  int _attempts = 0;
+class _PinScreenState extends State<PinScreen> {
+  final _auth = AuthService();
+  String _pin = '';
+  bool _isLoading = false;
+  bool _pinVisible = false;
+  String? _error;
+  String _username = '';
 
-  late final AnimationController _shake;
-  late final Animation<double> _shakeAnim;
+  static const _maxLength = 8;
+  static const _accentColor = Color(0xFF5B6EF5);
 
   @override
   void initState() {
     super.initState();
-    _shake = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 420),
-    );
-    _shakeAnim = TweenSequence([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: -14.0), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: -14.0, end: 14.0), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: 14.0, end: -10.0), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: -10.0, end: 10.0), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: 10.0, end: 0.0), weight: 1),
-    ]).animate(CurvedAnimation(parent: _shake, curve: Curves.easeInOut));
+    _loadUsername();
   }
 
-  @override
-  void dispose() {
-    _shake.dispose();
-    super.dispose();
+  Future<void> _loadUsername() async {
+    final name = await _auth.getUsername();
+    if (mounted) setState(() => _username = name ?? '');
   }
 
-  void _onDigit(String d) {
-    if (_current.length >= 6) return;
+  void _onKey(String digit) {
+    if (_pin.length >= _maxLength || _isLoading) return;
     setState(() {
-      _current += d;
-      _hasError = false;
-    });
-    if (_current.length == 6) _verify();
-  }
-
-  void _onBackspace() {
-    if (_current.isEmpty) return;
-    setState(() {
-      _current = _current.substring(0, _current.length - 1);
-      _hasError = false;
+      _pin += digit;
+      _error = null;
     });
   }
 
-  Future<void> _verify() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString(StorageService.pinKey) ?? '';
+  void _onDelete() {
+    if (_pin.isEmpty || _isLoading) return;
+    setState(() => _pin = _pin.substring(0, _pin.length - 1));
+  }
 
-    if (_current == saved) {
-      PinSession.instance.markVerified();
-      if (mounted) context.go('/home');
+  Future<void> _submit() async {
+    if (_pin.isEmpty || _isLoading) return;
+    setState(() => _isLoading = true);
+    final success = await _auth.signInWithPin(_pin);
+    if (!mounted) return;
+    if (success) {
+      context.go('/home');
     } else {
-      _attempts++;
-      _shake.forward(from: 0);
       setState(() {
-        _hasError = true;
-        _current = '';
+        _isLoading = false;
+        _pin = '';
+        _error = 'PIN noto\'g\'ri. Qayta urinib ko\'ring.';
       });
     }
   }
 
-  Future<void> _signOut() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => _ConfirmDialog(),
-    );
-    if (confirmed == true && mounted) {
-      PinSession.instance.reset();
-      await AuthService().signOut();
-      if (mounted) context.go('/login');
-    }
+  Future<void> _switchAccount() async {
+    await _auth.signOut();
+    if (mounted) context.go('/login');
   }
 
   @override
@@ -97,265 +73,310 @@ class _PinLockScreenState extends State<PinLockScreen>
     return Scaffold(
       backgroundColor: colors.backgroundBase,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            children: [
-              const SizedBox(height: 60),
-
-              // Lock icon
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: colors.accentDisabled,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.lock_outline_rounded,
-                  color: colors.accentSub,
-                  size: 34,
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'PIN-kodni kiriting',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color: colors.textStrong,
+                      fontFamily: 'Manrope',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Hisobingizga kirishni tasdiqlash uchun PIN-kodni kiriting',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: colors.textSub,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
+            ),
 
-              Text(
-                'PIN kod kiriting',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: colors.textStrong,
-                ),
-              ),
-              const SizedBox(height: 8),
+            const Spacer(),
 
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: _hasError
-                    ? Text(
-                        _attempts >= 5
-                            ? 'Juda ko\'p urinish. Chiqib qayta kiring.'
-                            : 'Noto\'g\'ri PIN. Qayta urinib ko\'ring.',
-                        key: const ValueKey('err'),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 13, color: colors.errorSub),
-                      )
-                    : Text(
-                        'Ilovaga kirish uchun PIN kodni kiriting',
-                        key: const ValueKey('hint'),
-                        textAlign: TextAlign.center,
-                        style:
-                            TextStyle(fontSize: 13, color: colors.textSoft),
+            // PIN dots — centered
+            SizedBox(
+              height: 40,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Dots row — center
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(_maxLength, (i) {
+                      final filled = i < _pin.length;
+                      final char = (filled && _pinVisible) ? _pin[i] : null;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: char != null
+                            ? Text(
+                                char,
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                  color: colors.textStrong,
+                                ),
+                              )
+                            : AnimatedContainer(
+                                duration: const Duration(milliseconds: 150),
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: filled
+                                      ? colors.textStrong
+                                      : Colors.transparent,
+                                  border: Border.all(
+                                    color: _error != null
+                                        ? const Color(0xFFEF4444)
+                                        : filled
+                                            ? colors.textStrong
+                                            : colors.strokeSub,
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                      );
+                    }),
+                  ),
+                  // Eye icon — right side
+                  Positioned(
+                    right: 24,
+                    child: GestureDetector(
+                      onTap: () => setState(() => _pinVisible = !_pinVisible),
+                      child: Icon(
+                        _pinVisible
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                        size: 22,
+                        color: colors.iconSub,
                       ),
+                    ),
+                  ),
+                ],
               ),
+            ),
 
-              const SizedBox(height: 48),
-
-              // Dots
-              AnimatedBuilder(
-                animation: _shakeAnim,
-                builder: (_, child) => Transform.translate(
-                  offset: Offset(_shakeAnim.value, 0),
-                  child: child,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(6, (i) {
-                    final filled = i < _current.length;
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeOut,
-                      margin: const EdgeInsets.symmetric(horizontal: 10),
-                      width: 16,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: filled ? colors.accentSub : Colors.transparent,
-                        border: Border.all(
-                          color: _hasError
-                              ? colors.errorSub
-                              : filled
-                                  ? colors.accentSub
-                                  : colors.strokeStrong,
-                          width: 2,
-                        ),
-                      ),
-                    );
-                  }),
+            // Error
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Center(
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(
+                      color: Color(0xFFEF4444),
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
               ),
 
-              const Spacer(),
+            const Spacer(),
 
-              // Numpad
-              _Numpad(
+            // Keypad
+            if (_isLoading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: 48),
+                  child: CircularProgressIndicator(color: _accentColor),
+                ),
+              )
+            else
+              _Keypad(
                 colors: colors,
-                onDigit: _onDigit,
-                onBackspace: _onBackspace,
+                onKey: _onKey,
+                onDelete: _onDelete,
+                onSend: _pin.isNotEmpty ? _submit : null,
               ),
 
-              const SizedBox(height: 24),
-
-              // Sign out link
-              TextButton(
-                onPressed: _signOut,
-                child: Text(
-                  'Hisobdan chiqish',
-                  style: TextStyle(fontSize: 13, color: colors.textSoft),
+            // Boshqa hisob
+            Padding(
+              padding: const EdgeInsets.only(bottom: 32, top: 16),
+              child: Center(
+                child: GestureDetector(
+                  onTap: _switchAccount,
+                  child: Text(
+                    'Boshqa hisob bilan kirish',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: colors.accentSub,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ),
-
-              const SizedBox(height: 8),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _Numpad extends StatelessWidget {
+class _Keypad extends StatelessWidget {
   final AppColors colors;
-  final void Function(String) onDigit;
-  final VoidCallback onBackspace;
+  final void Function(String) onKey;
+  final VoidCallback onDelete;
+  final VoidCallback? onSend;
 
-  const _Numpad({
+  const _Keypad({
     required this.colors,
-    required this.onDigit,
-    required this.onBackspace,
+    required this.onKey,
+    required this.onDelete,
+    this.onSend,
   });
-
-  static const _rows = [
-    ['1', '2', '3'],
-    ['4', '5', '6'],
-    ['7', '8', '9'],
-    ['', '0', 'del'],
-  ];
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: _rows.map((row) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: row.map((key) {
-              if (key.isEmpty) {
-                return const SizedBox(width: 88, height: 62);
-              }
-              if (key == 'del') {
-                return _Key(
-                  colors: colors,
-                  onTap: onBackspace,
-                  child: Icon(
-                    Icons.backspace_outlined,
-                    size: 22,
-                    color: colors.iconSub,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Column(
+        children: [
+          _buildRow(['1', '2', '3']),
+          _buildRow(['4', '5', '6']),
+          _buildRow(['7', '8', '9']),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: [
+                // Send
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: _KeyButton(
+                      colors: colors,
+                      filled: onSend != null,
+                      onTap: onSend ?? () {},
+                      child: Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 22,
+                        color: onSend != null ? Colors.white : colors.iconSub,
+                      ),
+                    ),
                   ),
-                );
-              }
-              return _Key(
+                ),
+                // 0
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: _KeyButton(
+                      colors: colors,
+                      onTap: () => onKey('0'),
+                      child: Text(
+                        '0',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                          color: colors.textStrong,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                // Delete
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: _KeyButton(
+                      colors: colors,
+                      transparent: true,
+                      onTap: onDelete,
+                      child: Icon(
+                        Icons.arrow_back_rounded,
+                        size: 22,
+                        color: colors.textStrong,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRow(List<String> keys) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: keys.map((key) {
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: _KeyButton(
                 colors: colors,
-                onTap: () => onDigit(key),
+                onTap: () => onKey(key),
                 child: Text(
                   key,
                   style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
                     color: colors.textStrong,
                   ),
                 ),
-              );
-            }).toList(),
-          ),
-        );
-      }).toList(),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }
 
-class _Key extends StatefulWidget {
+class _KeyButton extends StatelessWidget {
   final AppColors colors;
-  final VoidCallback onTap;
   final Widget child;
+  final VoidCallback onTap;
+  final bool filled;
+  final bool transparent;
 
-  const _Key({
+  const _KeyButton({
     required this.colors,
-    required this.onTap,
     required this.child,
+    required this.onTap,
+    this.filled = false,
+    this.transparent = false,
   });
-
-  @override
-  State<_Key> createState() => _KeyState();
-}
-
-class _KeyState extends State<_Key> {
-  bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 80),
-        width: 88,
-        height: 62,
-        margin: const EdgeInsets.symmetric(horizontal: 6),
+      onTap: onTap,
+      child: Container(
+        height: 72,
         decoration: BoxDecoration(
-          color: _pressed
-              ? widget.colors.backgroundElevation2
-              : widget.colors.backgroundElevation1,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: widget.colors.strokeSub),
+          color: transparent
+              ? Colors.transparent
+              : filled
+                  ? const Color(0xFF5B6EF5)
+                  : colors.backgroundElevation1,
+          borderRadius: BorderRadius.circular(32),
+          border: transparent
+              ? null
+              : Border.all(
+                  color: filled
+                      ? const Color(0xFF5B6EF5)
+                      : colors.strokeSub,
+                  width: 1,
+                ),
         ),
-        alignment: Alignment.center,
-        child: widget.child,
+        child: Center(child: child),
       ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _ConfirmDialog extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return AlertDialog(
-      backgroundColor: colors.backgroundElevation1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Text(
-        'Chiqishni tasdiqlang',
-        style: TextStyle(
-            color: colors.textStrong, fontWeight: FontWeight.w600),
-      ),
-      content: Text(
-        'Hisobdan chiqmoqchimisiz?',
-        style: TextStyle(color: colors.textSub),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child:
-              Text('Bekor qilish', style: TextStyle(color: colors.textSub)),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: Text(
-            'Chiqish',
-            style: TextStyle(
-                color: colors.errorSub, fontWeight: FontWeight.w600),
-          ),
-        ),
-      ],
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:dcmanagement/providers/theme_notifier.dart';
 import 'package:dcmanagement/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'services/pin_session.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +16,8 @@ ThemeData _buildTheme(Brightness brightness) {
       ? ThemeData.light(useMaterial3: true)
       : ThemeData.dark(useMaterial3: true);
   return base.copyWith(
+    scaffoldBackgroundColor:
+        brightness == Brightness.dark ? const Color(0xFF000000) : null,
     textTheme: GoogleFonts.manropeTextTheme(base.textTheme),
     extensions: [
       brightness == Brightness.light ? AppColors.light() : AppColors.dark(),
@@ -22,18 +25,44 @@ ThemeData _buildTheme(Brightness brightness) {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final ThemeNotifier themeNotifier;
   const MyApp({super.key, required this.themeNotifier});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      PinSession.instance.reset();
+      appRouter.refresh();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: themeNotifier,
+      listenable: widget.themeNotifier,
       builder: (context, child) => MaterialApp.router(
         routerConfig: appRouter,
         debugShowCheckedModeBanner: false,
-        themeMode: themeNotifier.mode,
+        themeMode: widget.themeNotifier.mode,
         theme: _buildTheme(Brightness.light),
         darkTheme: _buildTheme(Brightness.dark),
       ),

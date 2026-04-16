@@ -1,19 +1,22 @@
 import 'package:dcmanagement/colors/app_colors.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:dcmanagement/services/auth_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class _TabItem {
   final String label;
   final String path;
-  final IconData? activeIcon;
-  final IconData? inactiveIcon;
+  final String? svgAsset; // assets/icons/...svg
+  final IconData? fallbackIcon; // SVG yo'q bo'lsa
 
   const _TabItem({
     required this.label,
     required this.path,
-    this.activeIcon,
-    this.inactiveIcon,
+    this.svgAsset,
+    this.fallbackIcon,
   });
 }
 
@@ -25,32 +28,27 @@ class ScaffoldWithNavBar extends StatelessWidget {
     _TabItem(
       label: 'Foydalanuvchilar',
       path: '/users',
-      activeIcon: LucideIcons.users,
-      inactiveIcon: LucideIcons.users,
-    ),
-    _TabItem(
-      label: 'Moliya',
-      path: '/home',
-      activeIcon: LucideIcons.briefcase,
-      inactiveIcon: LucideIcons.briefcase,
+      fallbackIcon: LucideIcons.users,
     ),
     _TabItem(
       label: 'Loyihalar',
       path: '/projects',
-      activeIcon: LucideIcons.folder,
-      inactiveIcon: LucideIcons.folderOpen,
+      svgAsset: 'assets/icons/folder.svg',
+    ),
+    _TabItem(
+      label: 'Moliya',
+      path: '/home',
+      svgAsset: 'assets/icons/briefcase-dollar.svg',
     ),
     _TabItem(
       label: 'Hisobotlar',
       path: '/reports',
-      activeIcon: LucideIcons.barChart2,
-      inactiveIcon: LucideIcons.barChart2,
+      svgAsset: 'assets/icons/analytics.svg',
     ),
     _TabItem(
       label: 'Shaxsiy',
       path: '/profile',
-      activeIcon: LucideIcons.user,
-      inactiveIcon: LucideIcons.user,
+      fallbackIcon: null, // avatar widget ishlatamiz
     ),
   ];
 
@@ -74,13 +72,11 @@ class ScaffoldWithNavBar extends StatelessWidget {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: colors.backgroundBase,
-          border: Border(
-            top: BorderSide(color: colors.strokeSub, width: 0.5),
-          ),
+          border: Border(top: BorderSide(color: colors.strokeSub, width: 0.5)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 16,
+              blurRadius: 10,
               offset: const Offset(0, -4),
             ),
           ],
@@ -93,6 +89,27 @@ class ScaffoldWithNavBar extends StatelessWidget {
               children: List.generate(_tabs.length, (i) {
                 final tab = _tabs[i];
                 final isActive = i == current;
+                final iconColor = isActive ? _activeColor : inactiveColor;
+
+                Widget iconWidget;
+
+                if (i == 4) {
+                  // Shaxsiy — avatar
+                  iconWidget = _AvatarIcon(isActive: isActive);
+                } else if (tab.svgAsset != null) {
+                  iconWidget = SvgPicture.asset(
+                    tab.svgAsset!,
+                    width: 22,
+                    height: 22,
+                    colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                  );
+                } else {
+                  iconWidget = Icon(
+                    tab.fallbackIcon,
+                    size: 22,
+                    color: iconColor,
+                  );
+                }
 
                 return Expanded(
                   child: GestureDetector(
@@ -102,37 +119,19 @@ class ScaffoldWithNavBar extends StatelessWidget {
                       duration: const Duration(milliseconds: 200),
                       curve: Curves.easeInOut,
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isActive ? _activeBg : Colors.transparent,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            isActive ? tab.activeIcon : tab.inactiveIcon,
-                            size: 22,
-                            color: isActive ? _activeColor : inactiveColor,
-                          ),
+                          iconWidget,
                           const SizedBox(height: 4),
                           Text(
                             tab.label,
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: 8,
                               fontWeight: isActive
                                   ? FontWeight.w600
                                   : FontWeight.w400,
                               color: isActive ? _activeColor : inactiveColor,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            width: isActive ? 4 : 0,
-                            height: isActive ? 4 : 0,
-                            decoration: const BoxDecoration(
-                              color: _activeColor,
-                              shape: BoxShape.circle,
                             ),
                           ),
                         ],
@@ -143,6 +142,60 @@ class ScaffoldWithNavBar extends StatelessWidget {
               }),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Avatar icon — AuthService dan username oladi
+// ---------------------------------------------------------------------------
+class _AvatarIcon extends StatefulWidget {
+  final bool isActive;
+  const _AvatarIcon({required this.isActive});
+
+  @override
+  State<_AvatarIcon> createState() => _AvatarIconState();
+}
+
+class _AvatarIconState extends State<_AvatarIcon> {
+  String _initial = 'A';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final name = prefs.getString('username') ?? 'A';
+    if (mounted) setState(() => _initial = name[0].toUpperCase());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const activeColor = Color(0xFF5B6EF5);
+    const activeBg = Color(0x155B6EF5);
+
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: BoxDecoration(
+        color: widget.isActive ? activeBg : const Color(0xFFE5E7EB),
+        shape: BoxShape.circle,
+        border: widget.isActive
+            ? Border.all(color: activeColor, width: 1.5)
+            : null,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        _initial,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: widget.isActive ? activeColor : const Color(0xFF6B7280),
         ),
       ),
     );

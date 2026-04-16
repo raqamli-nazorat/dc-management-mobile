@@ -4,6 +4,7 @@ import 'package:dcmanagement/models/user_model.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:dcmanagement/widgets/worker_card.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 
 enum _SortMode { none, alphabetical, salaryAsc, salaryDesc }
@@ -51,12 +52,6 @@ class _UsersScreenState extends State<UsersScreen> {
       List<UserModel> users;
       try {
         users = await _api.getUsers(token);
-        print('✅ Users (${users.length}):');
-        for (final u in users) {
-          print(
-            ' ${users}',
-          );
-        }
       } on ApiException catch (e) {
         if (e.statusCode == 403) {
           // Regular user — show only their own profile
@@ -339,14 +334,35 @@ class _UsersScreenState extends State<UsersScreen> {
                   Text(
                     'Foydalanuvchilar',
                     style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 17,
+                      fontFamily: "Manrope",
+                      fontWeight: FontWeight.w800,
                       color: colors.textStrong,
                     ),
                   ),
                   const Spacer(),
                   if (!_ownOnly) ...[
-                    // Filter button
+                    // Search button
+                    GestureDetector(
+                      onTap: () => setState(() => _searching = !_searching),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: colors.backgroundElevation1,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: colors.strokeSub),
+                        ),
+                        child: Icon(
+                          Icons.search,
+                          size: 18,
+                          color: colors.iconSub,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
                     GestureDetector(
                       onTap: _showFilterSheet,
                       child: Container(
@@ -364,30 +380,11 @@ class _UsersScreenState extends State<UsersScreen> {
                           ),
                         ),
                         child: Icon(
-                          Icons.tune,
+                          LucideIcons.filter,
                           size: 18,
                           color: _hasActiveFilter
                               ? Colors.white
                               : colors.iconSub,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Search button
-                    GestureDetector(
-                      onTap: () => setState(() => _searching = !_searching),
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: colors.backgroundElevation1,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: colors.strokeSub),
-                        ),
-                        child: Icon(
-                          Icons.search,
-                          size: 18,
-                          color: colors.iconSub,
                         ),
                       ),
                     ),

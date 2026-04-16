@@ -22,29 +22,11 @@ final appRouter = GoRouter(
     final onLogin = location == '/login';
     final onPin = location == '/pin';
 
-    // Not logged in → go to login
-    if (!loggedIn) {
-      return onLogin ? null : '/login';
-    }
+    if (!loggedIn) return onLogin ? null : '/login';
 
-    // Logged in + on login page → check PIN first
-    if (loggedIn && onLogin) {
-      final prefs = await SharedPreferences.getInstance();
-      final pinEnabled = prefs.getBool(StorageService.pinEnabledKey) ?? false;
-      if (pinEnabled && !PinSession.instance.verified) {
-        return '/pin';
-      }
-      return '/home';
-    }
+    if (onLogin) return '/pin'; // login bo'lsa ham PIN so'ra
 
-    // Logged in + on app screens: if PIN not yet verified, block and redirect
-    if (!onPin) {
-      final prefs = await SharedPreferences.getInstance();
-      final pinEnabled = prefs.getBool(StorageService.pinEnabledKey) ?? false;
-      if (pinEnabled && !PinSession.instance.verified) {
-        return '/pin';
-      }
-    }
+    if (!onPin && !PinSession.instance.verified) return '/pin';
 
     return null;
   },
@@ -53,7 +35,7 @@ final appRouter = GoRouter(
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
 
     // PIN lock — full screen, no bottom bar
-    GoRoute(path: '/pin', builder: (context, state) => const PinLockScreen()),
+    GoRoute(path: '/pin', builder: (context, state) => const PinScreen()),
 
     // User detail — full screen, no bottom bar
     GoRoute(

@@ -141,7 +141,7 @@ class AppColors extends ThemeExtension<AppColors> {
   factory AppColors.dark() => const AppColors(
         white: Color(0xFF000000),
         black: Color(0xFFFFFFFF),
-        backgroundBase: Color(0xFF111111),
+        backgroundBase: Color(0xFF000000),
         backgroundElevation1: Color(0xFF191A1A),
         backgroundElevation1Alt: Color(0xFF222323),
         backgroundElevation2: Color(0xFF292A2A),

@@ -1,11 +1,10 @@
 import 'package:dcmanagement/colors/app_colors.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class LoginScreen extends StatefulWidget {
-  // StatefulWidget!
   const LoginScreen({super.key});
 
   @override
@@ -13,25 +12,33 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Controller lar — input maydoni qiymatini o'qish uchun
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool get _isFormValid =>
-      _usernameController.text.trim().isNotEmpty &&
-      _passwordController.text.trim().isNotEmpty;
   final _authService = AuthService();
-  bool _isPasswordHidden = true;
 
+  bool _isPasswordHidden = true;
   bool _isLoading = false;
   String? _errorMessage;
 
-  // Widget destroy bo'lganda controller larni tozalab ketish
+  bool get _isFormValid =>
+      _usernameController.text.trim().isNotEmpty &&
+      _passwordController.text.trim().isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _usernameController.addListener(_onChanged);
+    _passwordController.addListener(_onChanged);
+  }
+
   @override
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
+
+  void _onChanged() => setState(() {});
 
   Future<void> _onLoginPressed() async {
     final username = _usernameController.text.trim();
@@ -48,51 +55,43 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     final success = await _authService.signIn(username, password);
-    print(success);
-    if (!mounted) return; // widget o'chirilgan bo'lsa davom etma
+    if (!mounted) return;
 
     if (success) {
-      context.go('/home'); // go_router bilan navigate
+      context.go('/home');
     } else {
       setState(() {
         _isLoading = false;
         _errorMessage =
-            "Login yo‘li yoki parol noto‘g‘ri kiritilgan. Iltimos, to‘g‘ri kiritilganiga ishonch hosil qiling.";
+            "Login yoki parol noto'g'ri. Iltimos, qayta tekshiring.";
       });
     }
   }
 
   @override
-  void initState() {
-    super.initState();
-    _usernameController.addListener(_onChanged);
-    _passwordController.addListener(_onChanged);
-  }
-
-  void _onChanged() {
-    setState(() {}); // UI yangilanadi
-  }
-
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
     return Scaffold(
+      backgroundColor: colors.backgroundBase,
       body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
+        decoration: BoxDecoration(
+          image: const DecorationImage(
             image: AssetImage("assets/image.png"),
             fit: BoxFit.cover,
           ),
+          color: colors.backgroundBase,
         ),
         width: double.infinity,
         height: double.infinity,
         child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(
-              20,
-            ), // EdgeInsets, not EdgeInsetsGeometry
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   "Raqamli boshqaruv tizimiga xush kelibsiz",
                   textAlign: TextAlign.start,
                   style: TextStyle(
@@ -101,31 +100,33 @@ class _LoginScreenState extends State<LoginScreen> {
                     letterSpacing: 1.7,
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
+                    color: colors.textStrong,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   "Loyihalar, vazifalar va moliyani bitta platformada boshqaring",
                   textAlign: TextAlign.start,
                   style: TextStyle(
                     fontSize: 15,
                     fontFamily: "Manrope",
-                    color: Colors.black54,
+                    color: colors.black,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 40),
 
+                // Form card
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEDEEF2),
+                    color: colors.backgroundElevation1,
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
                         blurRadius: 20,
                         offset: const Offset(0, 10),
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.12),
                       ),
                     ],
                   ),
@@ -149,78 +150,117 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
+                                  fontSize: 16,
                                 ),
                               ),
                             ),
                           ),
                           const SizedBox(width: 10),
-                          const Text(
+                          Text(
                             "Raqamli Nazorat",
                             style: TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
+                              color: colors.textStrong,
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+
+                      Text(
                         "Kirish",
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w700,
+                          color: colors.textStrong,
                         ),
                       ),
                       const SizedBox(height: 20),
 
-                      // Input lar — controller berildi
-                      _inputField("Login", controller: _usernameController),
+                      // Username
+                      _inputField(
+                        "Login",
+                        controller: _usernameController,
+                        colors: colors,
+                        prefixIcon: LucideIcons.user,
+                      ),
                       const SizedBox(height: 12),
+
+                      // Password
                       _inputField(
                         "Parol",
                         controller: _passwordController,
+                        colors: colors,
+                        prefixIcon: LucideIcons.lock,
                         isPassword: true,
                       ),
 
-                      // Xato xabar
+                      // Error
                       if (_errorMessage != null) ...[
                         const SizedBox(height: 10),
-                        Text(
-                          _errorMessage!,
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 13,
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(
+                              0xFFEF4444,
+                            ).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: const Color(
+                                0xFFEF4444,
+                              ).withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Text(
+                            _errorMessage!,
+                            style: const TextStyle(
+                              color: Color(0xFFEF4444),
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ],
 
                       const SizedBox(height: 20),
 
-                      // Button
+                      // Login button
                       GestureDetector(
                         onTap: (!_isFormValid || _isLoading)
                             ? null
                             : _onLoginPressed,
-                        child: Container(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
                           width: double.infinity,
                           height: 50,
                           decoration: BoxDecoration(
                             color: _isFormValid
-                                ? AppColors.dark().accentStrong
-                                : Colors.grey, // disabled rang
+                                ? const Color(0xFF5B6EF5)
+                                : Color(0xFFF2F1F0),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Center(
                             child: _isLoading
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white,
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2.5,
+                                    ),
                                   )
-                                : const Text(
+                                : Text(
                                     "Kirish",
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.white,
+                                      color: _isFormValid
+                                          ? Colors.white
+                                          : Color(0xFFA3A3A3),
                                     ),
                                   ),
                           ),
@@ -237,43 +277,47 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Controller qabul qiladi endi
   Widget _inputField(
     String hint, {
     required TextEditingController controller,
+    required AppColors colors,
+    required IconData prefixIcon,
     bool isPassword = false,
   }) {
     return Container(
       height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFE4E6EB),
+        color: colors.backgroundElevation2,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.strokeSub),
       ),
-      alignment: Alignment.centerLeft,
       child: TextField(
         controller: controller,
         obscureText: isPassword ? _isPasswordHidden : false,
+        style: TextStyle(
+          color: colors.textStrong,
+          fontSize: 15,
+          fontFamily: "Manrope",
+        ),
         decoration: InputDecoration(
           hintText: hint,
+          hintStyle: TextStyle(color: colors.textSoft, fontSize: 15),
           border: InputBorder.none,
-
-          // 👇 mana shu joy muhim
+          fillColor: colors.backgroundElevation2,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+          prefixIcon: Icon(prefixIcon, size: 18, color: colors.iconSub),
           suffixIcon: isPassword
               ? IconButton(
                   icon: Icon(
-                    _isPasswordHidden
-                        ? LucideIcons
-                              .eyeOff // yopiq ko‘z
-                        : LucideIcons.eye, // ochiq ko‘z
-                    size: 20,
-                    color: Colors.grey,
+                    _isPasswordHidden ? LucideIcons.eyeOff : LucideIcons.eye,
+                    size: 18,
+                    color: colors.iconSub,
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _isPasswordHidden = !_isPasswordHidden;
-                    });
-                  },
+                  onPressed: () =>
+                      setState(() => _isPasswordHidden = !_isPasswordHidden),
                 )
               : null,
         ),
