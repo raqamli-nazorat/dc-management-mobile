@@ -16,14 +16,14 @@ class ApiService {
   final Dio _dio;
 
   ApiService({String baseUrl = 'https://backend.raqamlinazorat.uz/api/'})
-      : _dio = Dio(
-          BaseOptions(
-            baseUrl: baseUrl,
-            followRedirects: true,
-            maxRedirects: 5,
-            validateStatus: (status) => status != null && status < 500,
-          ),
-        );
+    : _dio = Dio(
+        BaseOptions(
+          baseUrl: baseUrl,
+          followRedirects: true,
+          maxRedirects: 5,
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
 
   Options _auth(String token) =>
       Options(headers: {'Authorization': 'Bearer $token'});
@@ -34,8 +34,7 @@ class ApiService {
     final success = body['success'] as bool? ?? false;
     if (!success) {
       final error = body['error'] as Map<String, dynamic>?;
-      final msg =
-          error?['errorMsg'] as String? ?? "Noma'lum xatolik yuz berdi";
+      final msg = error?['errorMsg'] as String? ?? "Noma'lum xatolik yuz berdi";
       final code = (error?['errorId'] as num?)?.toInt() ?? 0;
       throw ApiException(msg, code);
     }
@@ -50,10 +49,10 @@ class ApiService {
     debugPrint('Body: { username: "$username", password: "$password" }');
 
     try {
-      final response = await _dio.post('auth/login/', data: {
-        'username': username,
-        'password': password,
-      });
+      final response = await _dio.post(
+        'auth/login/',
+        data: {'username': username, 'password': password},
+      );
       debugPrint('=== LOGIN RESPONSE ===');
       debugPrint('Status: ${response.statusCode}');
       debugPrint('Data: ${response.data}');
@@ -74,6 +73,9 @@ class ApiService {
   /// current user does not have permission.
   Future<List<UserModel>> getUsers(String token) async {
     final response = await _dio.get('users/', options: _auth(token));
+    debugPrint('=== GET USERS RAW ===');
+    debugPrint('Status: ${response.statusCode}');
+    debugPrint('Data: ${response.data}');
     final body = response.data as Map<String, dynamic>;
     final data = _unwrap(body) as Map<String, dynamic>? ?? {};
     final results = data['results'] as List? ?? [];

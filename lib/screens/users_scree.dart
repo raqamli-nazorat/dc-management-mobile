@@ -8,21 +8,6 @@ import 'package:go_router/go_router.dart';
 
 enum _SortMode { none, alphabetical, salaryAsc, salaryDesc }
 
-String _roleLabel(String role) {
-  switch (role.toLowerCase()) {
-    case 'superadmin':
-      return 'Super Admin';
-    case 'admin':
-      return 'Admin';
-    case 'manager':
-      return 'Menejer';
-    case 'worker':
-      return 'Xodim';
-    default:
-      return role.isNotEmpty ? role[0].toUpperCase() + role.substring(1) : "Noma'lum";
-  }
-}
-
 class UsersScreen extends StatefulWidget {
   const UsersScreen({super.key});
 
@@ -66,6 +51,12 @@ class _UsersScreenState extends State<UsersScreen> {
       List<UserModel> users;
       try {
         users = await _api.getUsers(token);
+        print('✅ Users (${users.length}):');
+        for (final u in users) {
+          print(
+            ' ${users}',
+          );
+        }
       } on ApiException catch (e) {
         if (e.statusCode == 403) {
           // Regular user — show only their own profile
@@ -228,7 +219,9 @@ class _UsersScreenState extends State<UsersScreen> {
                   _FilterChipRow(
                     colors: colors,
                     options: const ['A → Z'],
-                    selected: _sortMode == _SortMode.alphabetical ? 'A → Z' : null,
+                    selected: _sortMode == _SortMode.alphabetical
+                        ? 'A → Z'
+                        : null,
                     onSelect: (val) {
                       setSheetState(() {});
                       setState(() {
@@ -257,8 +250,8 @@ class _UsersScreenState extends State<UsersScreen> {
                     selected: _sortMode == _SortMode.salaryAsc
                         ? 'O\'sish'
                         : _sortMode == _SortMode.salaryDesc
-                            ? 'Kamayish'
-                            : null,
+                        ? 'Kamayish'
+                        : null,
                     onSelect: (val) {
                       setSheetState(() {});
                       setState(() {
@@ -291,7 +284,6 @@ class _UsersScreenState extends State<UsersScreen> {
                     spacing: 8,
                     runSpacing: 8,
                     children: _uniqueRoles.map((role) {
-                      final label = _roleLabel(role);
                       final selected = _roleFilter == role;
                       return GestureDetector(
                         onTap: () {
@@ -303,7 +295,9 @@ class _UsersScreenState extends State<UsersScreen> {
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 8),
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: selected
                                 ? colors.accentSub
@@ -313,14 +307,6 @@ class _UsersScreenState extends State<UsersScreen> {
                               color: selected
                                   ? colors.accentSub
                                   : colors.strokeSub,
-                            ),
-                          ),
-                          child: Text(
-                            label,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: selected ? Colors.white : colors.textStrong,
                             ),
                           ),
                         ),
@@ -398,8 +384,11 @@ class _UsersScreenState extends State<UsersScreen> {
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: colors.strokeSub),
                         ),
-                        child: Icon(Icons.search,
-                            size: 18, color: colors.iconSub),
+                        child: Icon(
+                          Icons.search,
+                          size: 18,
+                          color: colors.iconSub,
+                        ),
                       ),
                     ),
                   ],
@@ -428,8 +417,7 @@ class _UsersScreenState extends State<UsersScreen> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: colors.strokeSub),
                     ),
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 14),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14),
                   ),
                 ),
               ),
@@ -440,8 +428,7 @@ class _UsersScreenState extends State<UsersScreen> {
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                 child: Row(
                   children: [
-                    Icon(Icons.filter_list,
-                        size: 14, color: colors.accentSub),
+                    Icon(Icons.filter_list, size: 14, color: colors.accentSub),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
@@ -459,7 +446,11 @@ class _UsersScreenState extends State<UsersScreen> {
                         _roleFilter = null;
                         _applyFilters();
                       }),
-                      child: Icon(Icons.close, size: 16, color: colors.textSoft),
+                      child: Icon(
+                        Icons.close,
+                        size: 16,
+                        color: colors.textSoft,
+                      ),
                     ),
                   ],
                 ),
@@ -472,7 +463,9 @@ class _UsersScreenState extends State<UsersScreen> {
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: colors.backgroundElevation1,
                     borderRadius: BorderRadius.circular(12),
@@ -480,14 +473,19 @@ class _UsersScreenState extends State<UsersScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline,
-                          size: 16, color: colors.textSoft),
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: colors.textSoft,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           "Siz faqat o'z profilingizni ko'rishingiz mumkin",
                           style: TextStyle(
-                              fontSize: 12, color: colors.textSoft),
+                            fontSize: 12,
+                            color: colors.textSoft,
+                          ),
                         ),
                       ),
                     ],
@@ -505,9 +503,7 @@ class _UsersScreenState extends State<UsersScreen> {
 
   String _activeFilterLabel() {
     final parts = <String>[];
-    if (_roleFilter != null) {
-      parts.add(_roleLabel(_roleFilter!));
-    }
+
     switch (_sortMode) {
       case _SortMode.alphabetical:
         parts.add('A → Z');
@@ -526,9 +522,7 @@ class _UsersScreenState extends State<UsersScreen> {
 
   Widget _buildBody(AppColors colors) {
     if (_loading) {
-      return Center(
-        child: CircularProgressIndicator(color: colors.accentSub),
-      );
+      return Center(child: CircularProgressIndicator(color: colors.accentSub));
     }
 
     if (_error != null) {
@@ -543,7 +537,9 @@ class _UsersScreenState extends State<UsersScreen> {
               Text(
                 "Ma'lumot yuklanmadi",
                 style: TextStyle(
-                    fontWeight: FontWeight.w600, color: colors.textStrong),
+                  fontWeight: FontWeight.w600,
+                  color: colors.textStrong,
+                ),
               ),
               const SizedBox(height: 8),
               Text(

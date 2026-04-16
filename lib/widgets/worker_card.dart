@@ -1,31 +1,40 @@
-import 'package:flutter/material.dart';
 import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/models/user_model.dart';
+import 'package:flutter/material.dart';
 
 class UserCard extends StatelessWidget {
+  const UserCard({
+    super.key,
+    required this.user,
+    this.onTap,
+  });
+
   final UserModel user;
   final VoidCallback? onTap;
 
-  const UserCard({super.key, required this.user, this.onTap});
-
-  String _formatMoney(String raw) {
-    try {
-      final val = double.parse(raw);
-      final isNeg = val < 0;
-      final abs = val.abs().toStringAsFixed(0);
-      final formatted = abs.replaceAllMapped(
-        RegExp(r'(\d)(?=(\d{3})+$)'),
-        (m) => '${m[0]} ',
-      );
-      return "${isNeg ? '-' : ''}$formatted so'm";
-    } catch (_) {
-      return raw;
+  String _formatNumber(String raw) {
+    final value = double.tryParse(raw);
+    if (value == null) return raw;
+    // Format: 12 000 000,00
+    final parts = value.toStringAsFixed(2).split('.');
+    final intPart = parts[0];
+    final decPart = parts[1];
+    final buffer = StringBuffer();
+    int count = 0;
+    for (int i = intPart.length - 1; i >= 0; i--) {
+      if (count > 0 && count % 3 == 0) buffer.write('\u00A0'); // non-breaking space
+      buffer.write(intPart[i]);
+      count++;
     }
+    return '${buffer.toString().split('').reversed.join()},${decPart}';
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final initials = user.username.isNotEmpty
+        ? user.username[0].toUpperCase()
+        : '?';
 
     return GestureDetector(
       onTap: onTap,
@@ -35,91 +44,183 @@ class UserCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: colors.backgroundElevation1,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colors.strokeSub),
+          border: Border.all(color: colors.strokeSub, width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Top row: avatar + name/lavozim + checkmark
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: colors.accentDisabled,
+                // Avatar
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: colors.strokeSub,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  alignment: Alignment.center,
                   child: Text(
-                    user.initials,
+                    initials,
                     style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: colors.accentSub,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: colors.textSub,
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
+                // Name + Lavozim
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        user.username,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: colors.textStrong,
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'Ism sharifi:  ',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: colors.textSub,
+                              ),
+                            ),
+                            TextSpan(
+                              text: user.username,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: colors.textStrong,
+                              ),
+                            ),
+                          ],
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      Text(
-                        user.phoneNumber,
-                        style: TextStyle(fontSize: 12, color: colors.textSub),
+                      const SizedBox(height: 2),
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'Lavozimi:  ',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colors.textSub,
+                              ),
+                            ),
+                            TextSpan(
+                              text: user.role.isNotEmpty ? _capitalize(user.role) : '—',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: colors.textStrong,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
+              ],
+            ),
+
+            const SizedBox(height: 8),
+
+            // Rol
+            _InfoRow(
+              label: 'Rol:',
+              value: user.role.isNotEmpty ? user.role : '—',
+              colors: colors,
+              valueBold: true,
+            ),
+
+            // Oylik maoshi
+            _InfoRow(
+              label: 'Oylik maoshi:',
+              value: _formatNumber(user.fixedSalary),
+              colors: colors,
+              valueBold: true,
+            ),
+
+            // Balansi + checkmark
+            Row(
+              children: [
+                Expanded(
+                  child: _InfoRow(
+                    label: 'Balansi:',
+                    value: _formatNumber(user.balance ?? '0'),
+                    colors: colors,
+                    valueBold: true,
+                  ),
+                ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  width: 30,
+                  height: 30,
                   decoration: BoxDecoration(
-                    color: colors.accentDisabled,
+                    color: const Color(0xFF22C55E),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
-                    user.roleLabel,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: colors.accentSub,
-                    ),
+                  child: const Icon(
+                    Icons.check,
+                    color: Colors.white,
+                    size: 18,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            _infoRow(context, 'Maosh:', _formatMoney(user.fixedSalary)),
-            _infoRow(context, 'Balans:', _formatMoney(user.balance)),
           ],
         ),
       ),
     );
   }
 
-  Widget _infoRow(BuildContext context, String label, String value) {
-    final colors = AppColors.of(context);
+  String _capitalize(String s) {
+    if (s.isEmpty) return s;
+    return s[0].toUpperCase() + s.substring(1);
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    required this.colors,
+    this.valueBold = false,
+  });
+
+  final String label;
+  final String value;
+  final AppColors colors;
+  final bool valueBold;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Text(
-            '$label ',
-            style: TextStyle(fontSize: 13, color: colors.textSub),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: colors.textStrong,
+      padding: const EdgeInsets.only(bottom: 2),
+      child: RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: '$label  ',
+              style: TextStyle(
+                fontSize: 13,
+                color: colors.textSub,
+              ),
             ),
-          ),
-        ],
+            TextSpan(
+              text: value,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: valueBold ? FontWeight.w700 : FontWeight.w400,
+                color: colors.textStrong,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

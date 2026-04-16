@@ -1,4 +1,5 @@
 import 'package:dcmanagement/colors/app_colors.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -15,8 +16,11 @@ class _LoginScreenState extends State<LoginScreen> {
   // Controller lar — input maydoni qiymatini o'qish uchun
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-
+  bool get _isFormValid =>
+      _usernameController.text.trim().isNotEmpty &&
+      _passwordController.text.trim().isNotEmpty;
   final _authService = AuthService();
+  bool _isPasswordHidden = true;
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -52,12 +56,23 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       setState(() {
         _isLoading = false;
-        _errorMessage = "Login yoki parol noto'g'ri";
+        _errorMessage =
+            "Login yo‘li yoki parol noto‘g‘ri kiritilgan. Iltimos, to‘g‘ri kiritilganiga ishonch hosil qiling.";
       });
     }
   }
 
   @override
+  void initState() {
+    super.initState();
+    _usernameController.addListener(_onChanged);
+    _passwordController.addListener(_onChanged);
+  }
+
+  void _onChanged() {
+    setState(() {}); // UI yangilanadi
+  }
+
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
@@ -81,7 +96,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   "Raqamli boshqaruv tizimiga xush kelibsiz",
                   textAlign: TextAlign.start,
                   style: TextStyle(
+                    fontFamily: "Manrope",
                     height: 1.2,
+                    letterSpacing: 1.7,
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
                   ),
@@ -92,6 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   textAlign: TextAlign.start,
                   style: TextStyle(
                     fontSize: 15,
+                    fontFamily: "Manrope",
                     color: Colors.black54,
                     fontWeight: FontWeight.w500,
                   ),
@@ -180,12 +198,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       // Button
                       GestureDetector(
-                        onTap: _isLoading ? null : _onLoginPressed,
+                        onTap: (!_isFormValid || _isLoading)
+                            ? null
+                            : _onLoginPressed,
                         child: Container(
                           width: double.infinity,
                           height: 50,
                           decoration: BoxDecoration(
-                            color: AppColors.dark().accentStrong,
+                            color: _isFormValid
+                                ? AppColors.dark().accentStrong
+                                : Colors.grey, // disabled rang
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Center(
@@ -230,9 +252,31 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       alignment: Alignment.centerLeft,
       child: TextField(
-        controller: controller, // <-- controller ulandi
-        obscureText: isPassword,
-        decoration: InputDecoration(hintText: hint, border: InputBorder.none),
+        controller: controller,
+        obscureText: isPassword ? _isPasswordHidden : false,
+        decoration: InputDecoration(
+          hintText: hint,
+          border: InputBorder.none,
+
+          // 👇 mana shu joy muhim
+          suffixIcon: isPassword
+              ? IconButton(
+                  icon: Icon(
+                    _isPasswordHidden
+                        ? LucideIcons
+                              .eyeOff // yopiq ko‘z
+                        : LucideIcons.eye, // ochiq ko‘z
+                    size: 20,
+                    color: Colors.grey,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isPasswordHidden = !_isPasswordHidden;
+                    });
+                  },
+                )
+              : null,
+        ),
       ),
     );
   }
