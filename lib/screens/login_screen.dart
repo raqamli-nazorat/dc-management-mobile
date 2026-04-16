@@ -205,17 +205,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             horizontal: 12,
                             vertical: 10,
                           ),
-                          decoration: BoxDecoration(
-                            color: const Color(
-                              0xFFEF4444,
-                            ).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: const Color(
-                                0xFFEF4444,
-                              ).withValues(alpha: 0.3),
-                            ),
-                          ),
                           child: Text(
                             _errorMessage!,
                             style: const TextStyle(

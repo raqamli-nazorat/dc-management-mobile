@@ -16,8 +16,9 @@ ThemeData _buildTheme(Brightness brightness) {
       ? ThemeData.light(useMaterial3: true)
       : ThemeData.dark(useMaterial3: true);
   return base.copyWith(
-    scaffoldBackgroundColor:
-        brightness == Brightness.dark ? const Color(0xFF000000) : null,
+    scaffoldBackgroundColor: brightness == Brightness.dark
+        ? const Color(0xFF000000)
+        : null,
     textTheme: GoogleFonts.manropeTextTheme(base.textTheme),
     extensions: [
       brightness == Brightness.light ? AppColors.light() : AppColors.dark(),
@@ -44,15 +45,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused) {
-      PinSession.instance.reset();
-      appRouter.refresh();
-    }
   }
 
   @override

@@ -37,7 +37,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
     ),
     _TabItem(
       label: 'Moliya',
-      path: '/home',
+      path: '/finance',
       svgAsset: 'assets/icons/briefcase-dollar.svg',
     ),
     _TabItem(

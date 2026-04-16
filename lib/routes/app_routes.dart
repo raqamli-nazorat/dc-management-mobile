@@ -1,3 +1,4 @@
+import 'package:dcmanagement/screens/finance_screen.dart';
 import 'package:dcmanagement/screens/home_screen.dart';
 import 'package:dcmanagement/screens/pin_lock_screen.dart';
 import 'package:dcmanagement/screens/profile_screen.dart';
@@ -6,16 +7,15 @@ import 'package:dcmanagement/screens/user_detail_screen.dart';
 import 'package:dcmanagement/screens/users_scree.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:dcmanagement/services/pin_session.dart';
-import 'package:dcmanagement/services/storage_service.dart';
 import 'package:dcmanagement/widgets/scaffils_with_nav.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dcmanagement/screens/login_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 final _authService = AuthService();
 
 final appRouter = GoRouter(
   initialLocation: '/login',
+  refreshListenable: PinSession.instance,
   redirect: (context, state) async {
     final loggedIn = await _authService.isLoggedIn();
     final location = state.matchedLocation;
@@ -62,6 +62,10 @@ final appRouter = GoRouter(
         GoRoute(
           path: '/profile',
           builder: (context, state) => const ProfileScreen(),
+        ),
+        GoRoute(
+          path: '/finance',
+          builder: (context, state) => const FinanceScreen(),
         ),
       ],
     ),

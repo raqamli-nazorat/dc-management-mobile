@@ -1,6 +1,7 @@
 import 'package:dcmanagement/api/api.dart';
 import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/models/user_model.dart';
+import 'package:dcmanagement/providers/theme_notifier.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -37,15 +38,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: colors.backgroundElevation1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Chiqish',
-          style: TextStyle(
-              fontWeight: FontWeight.w700, color: colors.textStrong),
-        ),
-        content: Text(
-          'Hisobdan chiqmoqchimisiz?',
-          style: TextStyle(color: colors.textSub),
-        ),
+        title: Text('Chiqish',
+            style: TextStyle(
+                fontWeight: FontWeight.w700, color: colors.textStrong)),
+        content: Text('Hisobdan chiqmoqchimisiz?',
+            style: TextStyle(color: colors.textSub)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -54,15 +51,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Chiqish',
-              style: TextStyle(color: Color(0xFFEF4444)),
-            ),
+            child: const Text('Chiqish',
+                style: TextStyle(color: Color(0xFFEF4444))),
           ),
         ],
       ),
     );
-
     if (confirm == true) {
       await _auth.signOut();
       if (mounted) context.go('/login');
@@ -97,7 +91,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Row(
@@ -114,21 +107,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-
             Expanded(
               child: FutureBuilder<UserModel>(
                 future: _future,
                 builder: (context, snap) {
                   if (snap.connectionState == ConnectionState.waiting) {
                     return Center(
-                        child:
-                            CircularProgressIndicator(color: colors.accentSub));
+                        child: CircularProgressIndicator(
+                            color: colors.accentSub));
                   }
                   if (snap.hasError) {
                     return Center(
-                      child: Text(snap.error.toString(),
-                          style: TextStyle(color: colors.textSub)),
-                    );
+                        child: Text(snap.error.toString(),
+                            style: TextStyle(color: colors.textSub)));
                   }
                   return _buildBody(snap.data!, colors);
                 },
@@ -147,7 +138,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           const SizedBox(height: 8),
 
-          // Avatar + name
+          // Avatar card
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -219,8 +210,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _InfoRow(
               icon: LucideIcons.badgeCheck,
               label: 'Pasport',
-              value:
-                  user.passportSeries.isEmpty ? '—' : user.passportSeries,
+              value: user.passportSeries.isEmpty ? '—' : user.passportSeries,
               colors: colors,
             ),
           ]),
@@ -244,9 +234,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ]),
 
+          const SizedBox(height: 12),
+
+          // Theme switcher
+          _ThemeSwitcher(colors: colors),
+
           const SizedBox(height: 24),
 
-          // Logout button
+          // Logout
           GestureDetector(
             onTap: _logout,
             child: Container(
@@ -258,13 +253,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 border: Border.all(
                     color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(LucideIcons.logOut,
-                      size: 18, color: Color(0xFFEF4444)),
-                  const SizedBox(width: 8),
-                  const Text(
+                  Icon(LucideIcons.logOut, size: 18, color: Color(0xFFEF4444)),
+                  SizedBox(width: 8),
+                  Text(
                     'Chiqish',
                     style: TextStyle(
                       fontSize: 15,
@@ -283,6 +277,119 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Theme Switcher
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ThemeSwitcher extends StatelessWidget {
+  final AppColors colors;
+  const _ThemeSwitcher({required this.colors});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: ThemeNotifier.instance,
+      builder: (context, _) {
+        final current = ThemeNotifier.instance.mode;
+
+        return Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: colors.backgroundElevation1,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colors.strokeSub),
+          ),
+          child: Row(
+            children: [
+              _ThemeOption(
+                colors: colors,
+                icon: LucideIcons.sun,
+                label: 'Kunduz',
+                selected: current == ThemeMode.light,
+                onTap: () =>
+                    ThemeNotifier.instance.setMode(ThemeMode.light),
+              ),
+              _ThemeOption(
+                colors: colors,
+                icon: LucideIcons.monitor,
+                label: 'Avtomatik',
+                selected: current == ThemeMode.system,
+                onTap: () =>
+                    ThemeNotifier.instance.setMode(ThemeMode.system),
+              ),
+              _ThemeOption(
+                colors: colors,
+                icon: LucideIcons.moon,
+                label: 'Tungi',
+                selected: current == ThemeMode.dark,
+                onTap: () =>
+                    ThemeNotifier.instance.setMode(ThemeMode.dark),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ThemeOption extends StatelessWidget {
+  final AppColors colors;
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ThemeOption({
+    required this.colors,
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  static const _accent = Color(0xFF5B6EF5);
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? _accent : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: selected ? Colors.white : colors.iconSub,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight:
+                      selected ? FontWeight.w600 : FontWeight.w400,
+                  color: selected ? Colors.white : colors.textSoft,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _InfoCard extends StatelessWidget {
   final AppColors colors;
@@ -336,8 +443,7 @@ class _InfoRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(label,
-                  style:
-                      TextStyle(fontSize: 12, color: colors.textSoft)),
+                  style: TextStyle(fontSize: 12, color: colors.textSoft)),
               Text(
                 value,
                 style: TextStyle(
