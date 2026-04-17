@@ -1,5 +1,6 @@
 import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class FinanceScreen extends StatelessWidget {
   const FinanceScreen({super.key});
@@ -14,6 +15,8 @@ class FinanceScreen extends StatelessWidget {
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center, // 🔥 vertical center
+            // crossAxisAlignment: CrossAxisAlignment.center, //
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -21,7 +24,7 @@ class FinanceScreen extends StatelessWidget {
                 style: TextStyle(
                   fontFamily: 'Manrope',
                   fontSize: 22,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w900,
                   color: colors.textStrong,
                 ),
               ),
@@ -30,8 +33,8 @@ class FinanceScreen extends StatelessWidget {
               _BigCard(
                 colors: colors,
                 title: "Xarajat so'rovlari",
-                imagePath: 'assets/images/earth.svg',
-                onTap: () {},
+                imagePath: 'assets/images/earth.png',
+                onTap: () => context.push('/finance/expense-requests'),
               ),
 
               const SizedBox(height: 12),
@@ -42,8 +45,8 @@ class FinanceScreen extends StatelessWidget {
                     child: _SmallCard(
                       colors: colors,
                       title: 'Ish haqi',
-                      imagePath: 'assets/images/breafcase.svg',
-                      onTap: () {},
+                      imagePath: 'assets/images/briefcase.png',
+                      onTap: () => context.push('/finance/salary'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -51,8 +54,8 @@ class FinanceScreen extends StatelessWidget {
                     child: _SmallCard(
                       colors: colors,
                       title: 'Tarix',
-                      imagePath: 'assets/images/mobile_phone.svg',
-                      onTap: () {},
+                      imagePath: 'assets/images/mobile.png',
+                      onTap: () => context.push('/finance/history'),
                     ),
                   ),
                 ],
@@ -108,7 +111,8 @@ class _BigCard extends StatelessWidget {
                 ),
               ),
             ),
-            Center( // 🔥 FIX
+            Center(
+              // 🔥 FIX
               child: Image.asset(
                 imagePath,
                 width: 110,
@@ -143,15 +147,16 @@ class _SmallCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 160,
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        height: 120,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           color: colors.backgroundElevation1,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: colors.strokeSub),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
               title,
@@ -162,16 +167,7 @@ class _SmallCard extends StatelessWidget {
                 color: colors.textStrong,
               ),
             ),
-            const Spacer(),
-            Align(
-              alignment: Alignment.bottomRight,
-              child: Image.asset(
-                imagePath,
-                width: 90,
-                height: 90,
-                fit: BoxFit.contain,
-              ),
-            ),
+            Image.asset(imagePath, width: 80, height: 80, fit: BoxFit.contain),
           ],
         ),
       ),

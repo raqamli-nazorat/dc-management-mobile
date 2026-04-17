@@ -100,6 +100,72 @@ class ApiService {
     return UserModel.fromJson(data);
   }
 
+  // ── Expense Requests ─────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getExpenseRequests(String token) async {
+    final response = await _dio.get(
+      'expense-request/',
+      options: _auth(token),
+    );
+    final body = response.data as Map<String, dynamic>;
+    final data = _unwrap(body);
+    if (data is Map<String, dynamic>) {
+      final results = data['results'] as List? ?? [];
+      return results.cast<Map<String, dynamic>>();
+    }
+    if (data is List) return data.cast<Map<String, dynamic>>();
+    return [];
+  }
+
+  Future<List<Map<String, dynamic>>> getPayrolls(String token) async {
+    final response = await _dio.get('payrolls/', options: _auth(token));
+    final body = response.data as Map<String, dynamic>;
+    final data = _unwrap(body);
+    if (data is Map<String, dynamic>) {
+      return (data['results'] as List? ?? []).cast<Map<String, dynamic>>();
+    }
+    if (data is List) return data.cast<Map<String, dynamic>>();
+    return [];
+  }
+
+  Future<List<Map<String, dynamic>>> getProjects(String token) async {
+    final response = await _dio.get('projects/', options: _auth(token));
+    final body = response.data as Map<String, dynamic>;
+    final data = _unwrap(body);
+    if (data is Map<String, dynamic>) {
+      return (data['results'] as List? ?? []).cast<Map<String, dynamic>>();
+    }
+    if (data is List) return data.cast<Map<String, dynamic>>();
+    return [];
+  }
+
+  Future<List<Map<String, dynamic>>> getExpenseCategories(String token) async {
+    final response = await _dio.get('expense-category/', options: _auth(token));
+    final body = response.data as Map<String, dynamic>;
+    final data = _unwrap(body);
+    if (data is Map<String, dynamic>) {
+      return (data['results'] as List? ?? []).cast<Map<String, dynamic>>();
+    }
+    if (data is List) return data.cast<Map<String, dynamic>>();
+    return [];
+  }
+
+  Future<Map<String, dynamic>> getExpenseRequestDetail(
+      String token, int id) async {
+    final response =
+        await _dio.get('expense-request/$id/', options: _auth(token));
+    final body = response.data as Map<String, dynamic>;
+    return _unwrap(body) as Map<String, dynamic>;
+  }
+
+  Future<void> createExpenseRequest(
+      String token, Map<String, dynamic> data) async {
+    final response = await _dio.post('expense-request/',
+        data: data, options: _auth(token));
+    final body = response.data as Map<String, dynamic>;
+    _unwrap(body);
+  }
+
   // ── Legacy ────────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> getProfile(String token) async {

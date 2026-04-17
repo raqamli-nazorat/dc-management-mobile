@@ -1,5 +1,8 @@
+import 'package:dcmanagement/screens/expense_requests_screen.dart';
+import 'package:dcmanagement/screens/finance_history_screen.dart';
 import 'package:dcmanagement/screens/finance_screen.dart';
 import 'package:dcmanagement/screens/home_screen.dart';
+import 'package:dcmanagement/screens/salary_screen.dart';
 import 'package:dcmanagement/screens/pin_lock_screen.dart';
 import 'package:dcmanagement/screens/profile_screen.dart';
 import 'package:dcmanagement/screens/project_screen.dart';
@@ -44,6 +47,20 @@ final appRouter = GoRouter(
         final id = int.parse(state.pathParameters['id']!);
         return UserDetailScreen(userId: id);
       },
+    ),
+
+    // Finance sub-screens — full screen, no bottom bar
+    GoRoute(
+      path: '/finance/expense-requests',
+      builder: (context, state) => const ExpenseRequestsScreen(),
+    ),
+    GoRoute(
+      path: '/finance/salary',
+      builder: (context, state) => const SalaryScreen(),
+    ),
+    GoRoute(
+      path: '/finance/history',
+      builder: (context, state) => const FinanceHistoryScreen(),
     ),
 
     // ShellRoute — screens with bottom bar
