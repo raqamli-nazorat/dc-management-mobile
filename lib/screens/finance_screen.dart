@@ -19,15 +19,6 @@ class FinanceScreen extends StatelessWidget {
             // crossAxisAlignment: CrossAxisAlignment.center, //
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Moliya',
-                style: TextStyle(
-                  fontFamily: 'Manrope',
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  color: colors.textStrong,
-                ),
-              ),
               const SizedBox(height: 16),
 
               _BigCard(

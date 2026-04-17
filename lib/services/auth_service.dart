@@ -94,8 +94,22 @@ class AuthService {
     final raw = await _storage.getString('password_length');
     return raw != null ? int.tryParse(raw) : null;
   }
+
   Future<bool> hasToken() async {
     final token = await getToken();
     return token != null && token.isNotEmpty;
+  }
+
+  Future<List<String>> getUserRoles() async {
+    final raw = await _storage.getString(StorageService.userKey);
+    if (raw == null) return [];
+
+    final user = jsonDecode(raw);
+    final roles = user['roles'];
+
+    if (roles is List) {
+      return roles.map((e) => e.toString()).toList();
+    }
+    return [];
   }
 }

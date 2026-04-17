@@ -2,6 +2,7 @@ import 'package:dcmanagement/screens/expense_requests_screen.dart';
 import 'package:dcmanagement/screens/finance_history_screen.dart';
 import 'package:dcmanagement/screens/finance_screen.dart';
 import 'package:dcmanagement/screens/home_screen.dart';
+import 'package:dcmanagement/screens/role_select_screen.dart';
 import 'package:dcmanagement/screens/salary_screen.dart';
 import 'package:dcmanagement/screens/pin_lock_screen.dart';
 import 'package:dcmanagement/screens/profile_screen.dart';
@@ -13,6 +14,8 @@ import 'package:dcmanagement/services/pin_session.dart';
 import 'package:dcmanagement/widgets/scaffils_with_nav.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dcmanagement/screens/login_screen.dart';
+
+// ... yuqoridagi importlar ...
 
 final _authService = AuthService();
 
@@ -26,64 +29,47 @@ final appRouter = GoRouter(
     final onPin = location == '/pin';
 
     if (!loggedIn) return onLogin ? null : '/login';
-
-    if (onLogin) return '/pin'; // login bo'lsa ham PIN so'ra
-
+    if (onLogin) return '/pin';
     if (!onPin && !PinSession.instance.verified) return '/pin';
-
     return null;
   },
   routes: [
-    // Login — no bottom bar
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-
-    // PIN lock — full screen, no bottom bar
     GoRoute(path: '/pin', builder: (context, state) => const PinScreen()),
 
-    // User detail — full screen, no bottom bar
     GoRoute(
       path: '/users/:id',
-      builder: (context, state) {
-        final id = int.parse(state.pathParameters['id']!);
-        return UserDetailScreen(userId: id);
-      },
+      builder: (context, state) =>
+          UserDetailScreen(userId: int.parse(state.pathParameters['id']!)),
     ),
 
-    // Finance sub-screens — full screen, no bottom bar
+    // Finance sub screens
     GoRoute(
       path: '/finance/expense-requests',
-      builder: (context, state) => const ExpenseRequestsScreen(),
+      builder: (_, __) => const ExpenseRequestsScreen(),
     ),
-    GoRoute(
-      path: '/finance/salary',
-      builder: (context, state) => const SalaryScreen(),
-    ),
+    GoRoute(path: '/finance/salary', builder: (_, __) => const SalaryScreen()),
     GoRoute(
       path: '/finance/history',
-      builder: (context, state) => const FinanceHistoryScreen(),
+      builder: (_, __) => const FinanceHistoryScreen(),
     ),
 
-    // ShellRoute — screens with bottom bar
+    // Select Role — Bottom bar bo'lmasligi uchun alohida
+    GoRoute(
+      path: '/select-role',
+      builder: (context, state) => const RoleSelectScreen(),
+    ),
+
+    // ==================== ShellRoute (Bottom Navigation Bar bilan sahifalar) ====================
     ShellRoute(
-      builder: (context, state, child) => ScaffoldWithNavBar(child: child),
+      builder: (context, state, child) =>
+          ScaffoldWithNavBar(location: state.uri.path, child: child),
       routes: [
-        GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
-        GoRoute(
-          path: '/projects',
-          builder: (context, state) => const ProjectsScreen(),
-        ),
-        GoRoute(
-          path: '/users',
-          builder: (context, state) => const UsersScreen(),
-        ),
-        GoRoute(
-          path: '/profile',
-          builder: (context, state) => const ProfileScreen(),
-        ),
-        GoRoute(
-          path: '/finance',
-          builder: (context, state) => const FinanceScreen(),
-        ),
+        GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
+        GoRoute(path: '/projects', builder: (_, __) => const ProjectsScreen()),
+        GoRoute(path: '/users', builder: (_, __) => const UsersScreen()),
+        GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
+        GoRoute(path: '/finance', builder: (_, __) => const FinanceScreen()),
       ],
     ),
   ],

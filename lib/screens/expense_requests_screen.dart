@@ -115,14 +115,14 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
       final project = item['project_info'] as Map<String, dynamic>? ?? {};
       final category =
           item['expense_category_info'] as Map<String, dynamic>? ?? {};
-      final amount =
-          (num.tryParse(item['amount']?.toString() ?? '') ?? 0).abs().toDouble();
+      final amount = (num.tryParse(item['amount']?.toString() ?? '') ?? 0)
+          .abs()
+          .toDouble();
 
       if (_filter.projectId != null && project['id'] != _filter.projectId) {
         return false;
       }
-      if (_filter.categoryId != null &&
-          category['id'] != _filter.categoryId) {
+      if (_filter.categoryId != null && category['id'] != _filter.categoryId) {
         return false;
       }
       if (_filter.amountMin != null && amount < _filter.amountMin!) {
@@ -136,8 +136,10 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
         if (raw != null) {
           final dt = DateTime.tryParse(raw);
           if (dt != null &&
-              dt.isBefore(_filter.createdAt!
-                  .copyWith(hour: 0, minute: 0, second: 0))) return false;
+              dt.isBefore(
+                _filter.createdAt!.copyWith(hour: 0, minute: 0, second: 0),
+              ))
+            return false;
         }
       }
       if (_filter.paidAt != null) {
@@ -146,7 +148,8 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
         final dt = DateTime.tryParse(raw);
         if (dt == null ||
             dt.isBefore(
-                _filter.paidAt!.copyWith(hour: 0, minute: 0, second: 0))) {
+              _filter.paidAt!.copyWith(hour: 0, minute: 0, second: 0),
+            )) {
           return false;
         }
       }
@@ -155,8 +158,9 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
         if (raw == null) return false;
         final dt = DateTime.tryParse(raw);
         if (dt == null ||
-            dt.isBefore(_filter.confirmedAt!
-                .copyWith(hour: 0, minute: 0, second: 0))) {
+            dt.isBefore(
+              _filter.confirmedAt!.copyWith(hour: 0, minute: 0, second: 0),
+            )) {
           return false;
         }
       }
@@ -166,9 +170,7 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
 
   Future<void> _openFilter(AppColors colors) async {
     final result = await Navigator.of(context).push<ExpenseFilter>(
-      MaterialPageRoute(
-        builder: (_) => ExpenseFilterScreen(initial: _filter),
-      ),
+      MaterialPageRoute(builder: (_) => ExpenseFilterScreen(initial: _filter)),
     );
     if (result != null && mounted) {
       setState(() {
@@ -205,17 +207,15 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
         backgroundColor: colors.backgroundBase,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_rounded,
-            color: colors.textStrong,
-          ),
+          icon: Icon(Icons.arrow_back_rounded, color: colors.textStrong),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
           Container(
             margin: const EdgeInsets.only(right: 16),
             child: ElevatedButton.icon(
-              onPressed: () => showExpenseRequestForm(context).then((_) => _load()),
+              onPressed: () =>
+                  showExpenseRequestForm(context).then((_) => _load()),
               iconAlignment: IconAlignment.end,
               label: const Text(
                 "So'rov yuborish",
@@ -311,41 +311,40 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
                             ),
                           ),
                         ),
-                        IconButton(
-                          icon: Icon(
-                            Icons.search_rounded,
-                            color: colors.iconSub,
-                            size: 24,
-                          ),
-                          onPressed: () =>
-                              setState(() => _searching = true),
-                        ),
-                        Stack(
-                          clipBehavior: Clip.none,
+                        Row(
                           children: [
-                            IconButton(
-                              icon: Icon(
-                                Icons.tune_rounded,
-                                color: colors.iconSub,
-                                size: 24,
-                              ),
-                              onPressed: () => _openFilter(colors),
+                            _ActionButton(
+                              icon: Icons.search_rounded,
+                              colors: colors,
+                              onTap: () => setState(() => _searching = true),
                             ),
-                            if (_filter.isActive)
-                              Positioned(
-                                top: 8,
-                                right: 8,
-                                child: Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                    color: colors.accentSub,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              ),
+                            const SizedBox(width: 10),
+                            // Stack(
+                            //   clipBehavior: Clip.none,
+                            //   children: [
+                            //     _ActionButton(
+                            //       icon: LucideIcons.filter,
+                            //       colors: colors,
+                            //       onTap: () => _openFilter(colors),
+                            //     ),
+                            //     if (_filter.isActive)
+                            //       Positioned(
+                            //         top: 6,
+                            //         right: 6,
+                            //         child: Container(
+                            //           width: 8,
+                            //           height: 8,
+                            //           decoration: BoxDecoration(
+                            //             color: colors.accentSub,
+                            //             shape: BoxShape.circle,
+                            //           ),
+                            //         ),
+                            //       ),
+                            //   ],
+                            // ),
                           ],
                         ),
+                      
                       ],
                     ),
             ),
@@ -506,9 +505,9 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
           onTap: () {
             final id = _filtered[index]['id'] as int?;
             if (id == null) return;
-            Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => ExpenseDetailScreen(id: id),
-            ));
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => ExpenseDetailScreen(id: id)),
+            );
           },
           child: _ExpenseCard(item: _filtered[index], colors: colors),
         ),
@@ -657,8 +656,11 @@ class _ExpenseCard extends StatelessWidget {
                       : Border.all(color: colors.strokeStrong),
                 ),
                 child: isApproved
-                    ? const Icon(Icons.check_rounded,
-                        color: Colors.white, size: 18)
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      )
                     : null,
               ),
             ],
@@ -706,6 +708,37 @@ class _InfoRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final AppColors colors;
+
+  const _ActionButton({
+    required this.icon,
+    required this.onTap,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          color: colors.backgroundElevation1, // 👈 orqa fon
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: colors.strokeSub, // 👈 border
+          ),
+        ),
+        child: Icon(icon, color: colors.iconSub, size: 22),
       ),
     );
   }
