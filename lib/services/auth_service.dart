@@ -30,6 +30,7 @@ class AuthService {
 
       await _storage.saveString(StorageService.tokenKey, accessToken);
       await _storage.saveString('plain_username', username);
+      await _storage.saveString('password_length', password.length.toString());
       if (refreshToken != null) {
         await _storage.saveString('refresh_token', refreshToken);
       }
@@ -89,6 +90,10 @@ class AuthService {
 
   Future<String?> getToken() => _storage.getString(StorageService.tokenKey);
   Future<String?> getUsername() => _storage.getString('plain_username');
+  Future<int?> getPasswordLength() async {
+    final raw = await _storage.getString('password_length');
+    return raw != null ? int.tryParse(raw) : null;
+  }
   Future<bool> hasToken() async {
     final token = await getToken();
     return token != null && token.isNotEmpty;

@@ -17,27 +17,35 @@ class _PinScreenState extends State<PinScreen> {
   bool _pinVisible = false;
   String? _error;
   String _username = '';
-
-  static const _maxLength = 8;
-  static const _accentColor = Color(0xFF5B6EF5);
+  int? _pinLength;
 
   @override
   void initState() {
     super.initState();
-    _loadUsername();
+    _loadData();
   }
 
-  Future<void> _loadUsername() async {
+  Future<void> _loadData() async {
     final name = await _auth.getUsername();
-    if (mounted) setState(() => _username = name ?? '');
+    final length = await _auth.getPasswordLength();
+    if (mounted) {
+      setState(() {
+        _username = name ?? '';
+        _pinLength = length;
+      });
+    }
   }
 
   void _onKey(String digit) {
-    if (_pin.length >= _maxLength || _isLoading) return;
+    if (_isLoading) return;
+    if (_pinLength != null && _pin.length >= _pinLength!) return;
     setState(() {
       _pin += digit;
       _error = null;
     });
+    if (_pinLength != null && _pin.length == _pinLength!) {
+      _submit();
+    }
   }
 
   void _onDelete() {
@@ -106,23 +114,20 @@ class _PinScreenState extends State<PinScreen> {
 
             const Spacer(),
 
-            // PIN dots — centered
+            // PIN dots — grow dynamically
             SizedBox(
               height: 40,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Dots row — center
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(_maxLength, (i) {
-                      final filled = i < _pin.length;
-                      final char = (filled && _pinVisible) ? _pin[i] : null;
+                    children: List.generate(_pin.length, (i) {
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: char != null
+                        child: _pinVisible
                             ? Text(
-                                char,
+                                _pin[i],
                                 style: TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w700,
@@ -135,17 +140,9 @@ class _PinScreenState extends State<PinScreen> {
                                 height: 12,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: filled
-                                      ? colors.textStrong
-                                      : Colors.transparent,
-                                  border: Border.all(
-                                    color: _error != null
-                                        ? const Color(0xFFEF4444)
-                                        : filled
-                                            ? colors.textStrong
-                                            : colors.strokeSub,
-                                    width: 1.5,
-                                  ),
+                                  color: _error != null
+                                      ? const Color(0xFFEF4444)
+                                      : colors.textStrong,
                                 ),
                               ),
                       );
@@ -191,7 +188,9 @@ class _PinScreenState extends State<PinScreen> {
               const Center(
                 child: Padding(
                   padding: EdgeInsets.only(bottom: 48),
-                  child: CircularProgressIndicator(color: _accentColor),
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF5B6EF5),
+                  ),
                 ),
               )
             else
@@ -199,26 +198,8 @@ class _PinScreenState extends State<PinScreen> {
                 colors: colors,
                 onKey: _onKey,
                 onDelete: _onDelete,
-                onSend: _pin.isNotEmpty ? _submit : null,
+                onLogout: _switchAccount,
               ),
-
-            // Boshqa hisob
-            Padding(
-              padding: const EdgeInsets.only(bottom: 32, top: 16),
-              child: Center(
-                child: GestureDetector(
-                  onTap: _switchAccount,
-                  child: Text(
-                    'Boshqa hisob bilan kirish',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: colors.accentSub,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -230,13 +211,13 @@ class _Keypad extends StatelessWidget {
   final AppColors colors;
   final void Function(String) onKey;
   final VoidCallback onDelete;
-  final VoidCallback? onSend;
+  final VoidCallback onLogout;
 
   const _Keypad({
     required this.colors,
     required this.onKey,
     required this.onDelete,
-    this.onSend,
+    required this.onLogout,
   });
 
   @override
@@ -252,18 +233,18 @@ class _Keypad extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 12),
             child: Row(
               children: [
-                // Send
+                // Logout
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: _KeyButton(
                       colors: colors,
-                      filled: onSend != null,
-                      onTap: onSend ?? () {},
-                      child: Icon(
-                        Icons.arrow_forward_rounded,
+                      logoutStyle: true,
+                      onTap: onLogout,
+                      child: const Icon(
+                        Icons.logout_rounded,
                         size: 22,
-                        color: onSend != null ? Colors.white : colors.iconSub,
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -342,14 +323,14 @@ class _KeyButton extends StatelessWidget {
   final AppColors colors;
   final Widget child;
   final VoidCallback onTap;
-  final bool filled;
+  final bool logoutStyle;
   final bool transparent;
 
   const _KeyButton({
     required this.colors,
     required this.child,
     required this.onTap,
-    this.filled = false,
+    this.logoutStyle = false,
     this.transparent = false,
   });
 
@@ -362,15 +343,15 @@ class _KeyButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: transparent
               ? Colors.transparent
-              : filled
-                  ? const Color(0xFF5B6EF5)
-                  : colors.backgroundElevation1,
+              : logoutStyle
+              ? const Color(0xFFEF4444)
+              : colors.backgroundElevation1,
           borderRadius: BorderRadius.circular(32),
           border: transparent
               ? null
               : Border.all(
-                  color: filled
-                      ? const Color(0xFF5B6EF5)
+                  color: logoutStyle
+                      ? const Color(0xFFEF4444)
                       : colors.strokeSub,
                   width: 1,
                 ),
