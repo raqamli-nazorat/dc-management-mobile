@@ -30,7 +30,7 @@ class FinanceScreen extends StatelessWidget {
               _BigCard(
                 colors: colors,
                 title: "Xarajat so'rovlari",
-                imagePath: 'assets/images/earth.png',
+                imagePath: 'assets/images/earth.svg',
                 onTap: () {},
               ),
 
@@ -42,7 +42,7 @@ class FinanceScreen extends StatelessWidget {
                     child: _SmallCard(
                       colors: colors,
                       title: 'Ish haqi',
-                      imagePath: 'assets/images/breafcase.png',
+                      imagePath: 'assets/images/breafcase.svg',
                       onTap: () {},
                     ),
                   ),
@@ -51,7 +51,7 @@ class FinanceScreen extends StatelessWidget {
                     child: _SmallCard(
                       colors: colors,
                       title: 'Tarix',
-                      imagePath: 'assets/images/mobile_phone.png',
+                      imagePath: 'assets/images/mobile_phone.svg',
                       onTap: () {},
                     ),
                   ),

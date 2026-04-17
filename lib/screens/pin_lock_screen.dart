@@ -131,7 +131,7 @@ class _PinScreenState extends State<PinScreen> {
                                 style: TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w700,
-                                  color: colors.textStrong,
+                                  color: colors.errorStrong,
                                 ),
                               )
                             : AnimatedContainer(
@@ -140,9 +140,6 @@ class _PinScreenState extends State<PinScreen> {
                                 height: 12,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: _error != null
-                                      ? const Color(0xFFEF4444)
-                                      : colors.textStrong,
                                 ),
                               ),
                       );
@@ -188,9 +185,7 @@ class _PinScreenState extends State<PinScreen> {
               const Center(
                 child: Padding(
                   padding: EdgeInsets.only(bottom: 48),
-                  child: CircularProgressIndicator(
-                    color: Color(0xFF5B6EF5),
-                  ),
+                  child: CircularProgressIndicator(color: Color(0xFF5B6EF5)),
                 ),
               )
             else
@@ -239,12 +234,13 @@ class _Keypad extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: _KeyButton(
                       colors: colors,
-                      logoutStyle: true,
+                      transparent: true,
                       onTap: onLogout,
+                      logoutStyle: true,
                       child: const Icon(
                         Icons.logout_rounded,
                         size: 22,
-                        color: Colors.white,
+                        color: Color(0xFFEF4444),
                       ),
                     ),
                   ),
@@ -254,6 +250,7 @@ class _Keypad extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: _KeyButton(
+                      logoutStyle: false,
                       colors: colors,
                       onTap: () => onKey('0'),
                       child: Text(
@@ -274,6 +271,7 @@ class _Keypad extends StatelessWidget {
                     child: _KeyButton(
                       colors: colors,
                       transparent: true,
+                      logoutStyle: false,
                       onTap: onDelete,
                       child: Icon(
                         Icons.arrow_back_rounded,
@@ -301,6 +299,7 @@ class _Keypad extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: _KeyButton(
                 colors: colors,
+                logoutStyle: false,
                 onTap: () => onKey(key),
                 child: Text(
                   key,
@@ -341,20 +340,12 @@ class _KeyButton extends StatelessWidget {
       child: Container(
         height: 72,
         decoration: BoxDecoration(
-          color: transparent
-              ? Colors.transparent
-              : logoutStyle
-              ? const Color(0xFFEF4444)
-              : colors.backgroundElevation1,
+          color: transparent ? Colors.transparent : colors.backgroundElevation1,
           borderRadius: BorderRadius.circular(32),
-          border: transparent
-              ? null
-              : Border.all(
-                  color: logoutStyle
-                      ? const Color(0xFFEF4444)
-                      : colors.strokeSub,
-                  width: 1,
-                ),
+          border: Border.all(
+            color: logoutStyle ? colors.strokeSub : colors.strokeSub,
+            width: 1,
+          ),
         ),
         child: Center(child: child),
       ),
