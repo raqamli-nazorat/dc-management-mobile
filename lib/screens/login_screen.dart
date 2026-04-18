@@ -2,7 +2,7 @@ import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart'; // ← Eye icon uchun qo'shildi
+import 'package:lucide_icons/lucide_icons.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -108,25 +108,35 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "Raqamli boshqaruv tizimiga xush kelibsiz",
-                  style: TextStyle(
-                    fontFamily: "Manrope",
-                    height: 1.2,
-                    letterSpacing: 1.7,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: colors.textStrong,
+                SizedBox(
+                  width: 350,
+                  height: 56,
+                  child: Text(
+                    "Raqamli boshqaruv tizimiga xush kelibsiz",
+                    style: TextStyle(
+                      fontFamily: "Manrope",
+                      height: 28 / 24,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0,
+                      color: colors.textStrong,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  "Loyihalar, vazifalar va moliyani bitta platformada boshqaring",
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontFamily: "Manrope",
-                    color: colors.black,
-                    fontWeight: FontWeight.w500,
+                SizedBox(
+                  width: 350,
+                  height: 48,
+                  child: Text(
+                    "Loyihalar, vazifalar va moliyani bitta platformada boshqaring",
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontFamily: "Manrope",
+                      color: colors.black,
+                      fontWeight: FontWeight.w500,
+                      height: 24 / 15,
+                      letterSpacing: 0,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -152,30 +162,22 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Logo
                       Row(
                         children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF5B6EF5),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Center(
-                              child: Text(
-                                "R",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.asset(
+                              "assets/logo.png",
+                              width: 36,
+                              height: 36,
+                              fit: BoxFit.cover,
                             ),
                           ),
                           const SizedBox(width: 10),
                           Text(
                             "Raqamli Nazorat",
                             style: TextStyle(
+                              fontFamily: "Manrope",
                               fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                               color: colors.textStrong,
                             ),
                           ),
@@ -185,8 +187,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text(
                         "Kirish",
                         style: TextStyle(
+                          fontFamily: "Manrope",
                           fontSize: 28,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w800,
+                          height: 32 / 28,
+                          letterSpacing: 0,
                           color: colors.textStrong,
                         ),
                       ),
@@ -241,12 +246,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                       strokeWidth: 2.5,
                                     ),
                                   )
-                                : const Text(
+                                : Text(
                                     "Kirish",
                                     style: TextStyle(
+                                      fontFamily: "Manrope",
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
-                                      color: Color.fromARGB(255, 192, 192, 192),
+                                      color: _isFormValid
+                                          ? Colors.white
+                                          : const Color(0xFFC0C0C0),
                                     ),
                                   ),
                           ),
@@ -270,63 +278,82 @@ class _LoginScreenState extends State<LoginScreen> {
     required AppColors colors,
   }) {
     return Container(
-      height: 50,
+      height: 56,
+      width: double.infinity,
       decoration: BoxDecoration(
-        color: colors.backgroundElevation2,
+        color: const Color(0xFF222323),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.strokeSub),
+        border: Border.all(color: const Color(0xFF474848), width: 1),
       ),
       child: TextField(
         controller: controller,
-        style: TextStyle(color: colors.textStrong, fontSize: 15),
+        style: const TextStyle(
+          fontFamily: "Manrope",
+          color: Colors.white,
+          fontSize: 15,
+        ),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: colors.textSoft, fontSize: 15),
+          hintStyle: const TextStyle(
+            fontFamily: "Manrope",
+            color: Color(0xFF7A7A7A),
+            fontSize: 15,
+          ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
-            vertical: 14,
+            vertical: 18,
           ),
         ),
       ),
     );
   }
 
-  // ================== Password Field with Eye Button ==================
   Widget _passwordField(AppColors colors) {
     return Container(
-      height: 50,
+      height: 56,
+      width: double.infinity,
       decoration: BoxDecoration(
-        color: colors.backgroundElevation2,
+        color: const Color(0xFF222323),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.strokeSub),
+        border: Border.all(color: const Color(0xFF474848), width: 1),
       ),
       child: TextField(
         controller: _passwordController,
-        obscureText: _isPasswordHidden,
-        style: TextStyle(color: colors.textStrong, fontSize: 15),
-        decoration: InputDecoration(
-          hintText: "Parol",
-          hintStyle: TextStyle(color: colors.textSoft, fontSize: 15),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
+          obscureText: _isPasswordHidden,
+          style: const TextStyle(
+            fontFamily: "Manrope",
+            color: Colors.white,
+            fontSize: 15,
           ),
-          suffixIcon: IconButton(
-            icon: Icon(
-              _isPasswordHidden ? LucideIcons.eyeOff : LucideIcons.eye,
-              color: colors.textSoft,
-              size: 22,
+          decoration: InputDecoration(
+            hintText: "Parol",
+            hintStyle: const TextStyle(
+              fontFamily: "Manrope",
+              color: Color(0xFF7A7A7A),
+              fontSize: 15,
             ),
-            onPressed: () {
-              setState(() {
-                _isPasswordHidden = !_isPasswordHidden;
-              });
-            },
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 18,
+            ),
+            suffixIcon: _passwordController.text.isNotEmpty
+                ? IconButton(
+                    icon: Icon(
+                      _isPasswordHidden ? LucideIcons.eyeOff : LucideIcons.eye,
+                      color: const Color(0xFF7A7A7A),
+                      size: 22,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordHidden = !_isPasswordHidden;
+                      });
+                    },
+                  )
+                : null,
           ),
         ),
-      ),
     );
   }
 }

@@ -131,15 +131,16 @@ class _PinScreenState extends State<PinScreen> {
                                 style: TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w700,
-                                  color: colors.errorStrong,
+                                  color: colors.textStrong,
                                 ),
                               )
                             : AnimatedContainer(
                                 duration: const Duration(milliseconds: 150),
-                                width: 12,
-                                height: 12,
+                                width: 14,
+                                height: 14,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
+                                  color: colors.textStrong,
                                 ),
                               ),
                       );
