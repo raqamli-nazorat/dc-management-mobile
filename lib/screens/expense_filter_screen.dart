@@ -25,17 +25,19 @@ class _ExpenseFilterScreenState extends State<ExpenseFilterScreen> {
   final _amountMinCtrl = TextEditingController();
   final _amountMaxCtrl = TextEditingController();
 
-  String? _open; // which section is expanded: 'project','category','created','paid','confirmed'
+  // which tile is open: 'project','category','toifa',
+  // 'created_from','created_to','paid_from','paid_to','confirmed_from','confirmed_to'
+  String? _open;
 
   @override
   void initState() {
     super.initState();
     _filter = widget.initial;
     if (_filter.amountMin != null) {
-      _amountMinCtrl.text = _filter.amountMin!.toStringAsFixed(0);
+      _amountMinCtrl.text = _fmt(_filter.amountMin!);
     }
     if (_filter.amountMax != null) {
-      _amountMaxCtrl.text = _filter.amountMax!.toStringAsFixed(0);
+      _amountMaxCtrl.text = _fmt(_filter.amountMax!);
     }
     _loadDropdowns();
   }
@@ -45,6 +47,11 @@ class _ExpenseFilterScreenState extends State<ExpenseFilterScreen> {
     _amountMinCtrl.dispose();
     _amountMaxCtrl.dispose();
     super.dispose();
+  }
+
+  String _fmt(double v) {
+    final n = NumberFormat('#,##0.00', 'uz').format(v);
+    return n.replaceAll(',', ' ').replaceAll('.', ',');
   }
 
   Future<void> _loadDropdowns() async {
@@ -70,12 +77,15 @@ class _ExpenseFilterScreenState extends State<ExpenseFilterScreen> {
     return DateFormat('dd.MM.yyyy').format(dt);
   }
 
+  double? _parseAmount(String text) {
+    final clean = text.replaceAll(' ', '').replaceAll(',', '.');
+    return clean.isEmpty ? null : double.tryParse(clean);
+  }
+
   void _apply() async {
-    final minText = _amountMinCtrl.text.trim();
-    final maxText = _amountMaxCtrl.text.trim();
     final updated = _filter.copyWith(
-      amountMin: minText.isNotEmpty ? double.tryParse(minText) : null,
-      amountMax: maxText.isNotEmpty ? double.tryParse(maxText) : null,
+      amountMin: _parseAmount(_amountMinCtrl.text),
+      amountMax: _parseAmount(_amountMaxCtrl.text),
     );
     await updated.save();
     if (mounted) Navigator.of(context).pop(updated);
@@ -103,8 +113,10 @@ class _ExpenseFilterScreenState extends State<ExpenseFilterScreen> {
           'Filtrlash',
           style: TextStyle(
             fontFamily: 'Manrope',
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            height: 28 / 17,
+            letterSpacing: 0,
             color: colors.textStrong,
           ),
         ),
@@ -118,61 +130,72 @@ class _ExpenseFilterScreenState extends State<ExpenseFilterScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Loyiha
-                  _SectionLabel(label: 'Loyiha', colors: colors),
+                  // ── Loyiha ──────────────────────────────────────────────
+                  _Label(label: 'Loyiha', colors: colors),
                   _DropdownTile(
                     colors: colors,
                     placeholder: 'Loyiha tanlang',
                     value: _filter.projectTitle,
                     isOpen: _open == 'project',
                     onTap: () => _toggle('project'),
+                    onClear: _filter.projectId != null
+                        ? () => setState(() {
+                              _filter = _filter.copyWith(
+                                projectId: null,
+                                projectTitle: null,
+                              );
+                              _open = null;
+                            })
+                        : null,
                   ),
                   if (_open == 'project')
                     _OptionsList(
                       colors: colors,
                       items: _projects.map((p) {
-                        final createdAt = p['created_at'] as String?;
-                        String? subtitle;
-                        if (p['description'] != null &&
-                            (p['description'] as String).isNotEmpty) {
-                          subtitle = p['description'] as String;
-                        }
                         String? dateStr;
-                        if (createdAt != null) {
+                        final ca = p['created_at'] as String?;
+                        if (ca != null) {
                           try {
                             dateStr = DateFormat('dd.MM.yyyy')
-                                .format(DateTime.parse(createdAt));
+                                .format(DateTime.parse(ca));
                           } catch (_) {}
                         }
                         return _OptionItem(
                           id: p['id'] as int,
                           title: p['title'] as String? ?? '',
-                          subtitle: subtitle,
+                          subtitle: p['description'] as String?,
                           trailing: dateStr,
                           selected: _filter.projectId == p['id'],
                         );
                       }).toList(),
-                      onSelect: (item) {
-                        setState(() {
-                          _filter = _filter.copyWith(
-                            projectId: item.id,
-                            projectTitle: item.title,
-                          );
-                          _open = null;
-                        });
-                      },
+                      onSelect: (item) => setState(() {
+                        _filter = _filter.copyWith(
+                          projectId: item.id,
+                          projectTitle: item.title,
+                        );
+                        _open = null;
+                      }),
                     ),
 
                   const SizedBox(height: 14),
 
-                  // Xarajat turi
-                  _SectionLabel(label: 'Xarajat turi', colors: colors),
+                  // ── Xarajat turi ─────────────────────────────────────────
+                  _Label(label: 'Xarajat turi', colors: colors),
                   _DropdownTile(
                     colors: colors,
                     placeholder: 'Xarajat turini tanlang',
                     value: _filter.categoryTitle,
                     isOpen: _open == 'category',
                     onTap: () => _toggle('category'),
+                    onClear: _filter.categoryId != null
+                        ? () => setState(() {
+                              _filter = _filter.copyWith(
+                                categoryId: null,
+                                categoryTitle: null,
+                              );
+                              _open = null;
+                            })
+                        : null,
                   ),
                   if (_open == 'category')
                     _OptionsList(
@@ -184,21 +207,58 @@ class _ExpenseFilterScreenState extends State<ExpenseFilterScreen> {
                                 selected: _filter.categoryId == c['id'],
                               ))
                           .toList(),
-                      onSelect: (item) {
-                        setState(() {
-                          _filter = _filter.copyWith(
-                            categoryId: item.id,
-                            categoryTitle: item.title,
-                          );
-                          _open = null;
-                        });
-                      },
+                      onSelect: (item) => setState(() {
+                        _filter = _filter.copyWith(
+                          categoryId: item.id,
+                          categoryTitle: item.title,
+                        );
+                        _open = null;
+                      }),
                     ),
 
                   const SizedBox(height: 14),
 
-                  // Summa
-                  _SectionLabel(label: 'Summa', colors: colors),
+                  // ── Toifa ────────────────────────────────────────────────
+                  _Label(label: 'Toifa', colors: colors),
+                  _DropdownTile(
+                    colors: colors,
+                    placeholder: 'Toifani tanlang',
+                    value: _filter.toifaTitle,
+                    isOpen: _open == 'toifa',
+                    onTap: () => _toggle('toifa'),
+                    onClear: _filter.toifaId != null
+                        ? () => setState(() {
+                              _filter = _filter.copyWith(
+                                toifaId: null,
+                                toifaTitle: null,
+                              );
+                              _open = null;
+                            })
+                        : null,
+                  ),
+                  if (_open == 'toifa')
+                    _OptionsList(
+                      colors: colors,
+                      items: _categories
+                          .map((c) => _OptionItem(
+                                id: c['id'] as int,
+                                title: c['title'] as String? ?? '',
+                                selected: _filter.toifaId == c['id'],
+                              ))
+                          .toList(),
+                      onSelect: (item) => setState(() {
+                        _filter = _filter.copyWith(
+                          toifaId: item.id,
+                          toifaTitle: item.title,
+                        );
+                        _open = null;
+                      }),
+                    ),
+
+                  const SizedBox(height: 14),
+
+                  // ── Summa ────────────────────────────────────────────────
+                  _Label(label: 'Summa (UZS)', colors: colors),
                   Row(
                     children: [
                       Expanded(
@@ -221,64 +281,132 @@ class _ExpenseFilterScreenState extends State<ExpenseFilterScreen> {
 
                   const SizedBox(height: 14),
 
-                  // Yaratilgan vaqti
-                  _SectionLabel(label: 'Yaratilgan vaqti', colors: colors),
-                  _DateTile(
-                    colors: colors,
-                    value: _filter.createdAt,
-                    display: _fmtDate(_filter.createdAt),
-                    isOpen: _open == 'created',
-                    onTap: () => _toggle('created'),
+                  // ── Yaratilgan vaqti oralig'i ────────────────────────────
+                  _Label(label: "Yaratilgan vaqti oralig'i", colors: colors),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _DateTile(
+                          colors: colors,
+                          display: _fmtDate(_filter.createdAtFrom),
+                          isOpen: _open == 'created_from',
+                          onTap: () => _toggle('created_from'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _DateTile(
+                          colors: colors,
+                          display: _fmtDate(_filter.createdAtTo),
+                          isOpen: _open == 'created_to',
+                          onTap: () => _toggle('created_to'),
+                        ),
+                      ),
+                    ],
                   ),
-                  if (_open == 'created')
+                  if (_open == 'created_from')
                     _InlineCalendar(
                       colors: colors,
-                      selected: _filter.createdAt,
+                      selected: _filter.createdAtFrom,
                       onChanged: (d) => setState(() {
-                        _filter = _filter.copyWith(createdAt: d);
+                        _filter = _filter.copyWith(createdAtFrom: d);
+                        _open = null;
+                      }),
+                    ),
+                  if (_open == 'created_to')
+                    _InlineCalendar(
+                      colors: colors,
+                      selected: _filter.createdAtTo,
+                      onChanged: (d) => setState(() {
+                        _filter = _filter.copyWith(createdAtTo: d);
                         _open = null;
                       }),
                     ),
 
                   const SizedBox(height: 14),
 
-                  // To'langan vaqti
-                  _SectionLabel(label: "To'langan vaqti", colors: colors),
-                  _DateTile(
-                    colors: colors,
-                    value: _filter.paidAt,
-                    display: _fmtDate(_filter.paidAt),
-                    isOpen: _open == 'paid',
-                    onTap: () => _toggle('paid'),
+                  // ── To'langan vaqti oralig'i ─────────────────────────────
+                  _Label(label: "To'langan vaqti oralig'i", colors: colors),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _DateTile(
+                          colors: colors,
+                          display: _fmtDate(_filter.paidAtFrom),
+                          isOpen: _open == 'paid_from',
+                          onTap: () => _toggle('paid_from'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _DateTile(
+                          colors: colors,
+                          display: _fmtDate(_filter.paidAtTo),
+                          isOpen: _open == 'paid_to',
+                          onTap: () => _toggle('paid_to'),
+                        ),
+                      ),
+                    ],
                   ),
-                  if (_open == 'paid')
+                  if (_open == 'paid_from')
                     _InlineCalendar(
                       colors: colors,
-                      selected: _filter.paidAt,
+                      selected: _filter.paidAtFrom,
                       onChanged: (d) => setState(() {
-                        _filter = _filter.copyWith(paidAt: d);
+                        _filter = _filter.copyWith(paidAtFrom: d);
+                        _open = null;
+                      }),
+                    ),
+                  if (_open == 'paid_to')
+                    _InlineCalendar(
+                      colors: colors,
+                      selected: _filter.paidAtTo,
+                      onChanged: (d) => setState(() {
+                        _filter = _filter.copyWith(paidAtTo: d);
                         _open = null;
                       }),
                     ),
 
                   const SizedBox(height: 14),
 
-                  // Tasdiqlangan vaqti
-                  _SectionLabel(
-                      label: 'Tasdiqlangan vaqti', colors: colors),
-                  _DateTile(
-                    colors: colors,
-                    value: _filter.confirmedAt,
-                    display: _fmtDate(_filter.confirmedAt),
-                    isOpen: _open == 'confirmed',
-                    onTap: () => _toggle('confirmed'),
+                  // ── Tasdiqlangan vaqti oralig'i ──────────────────────────
+                  _Label(label: "Tasdiqlangan vaqti oralig'i", colors: colors),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _DateTile(
+                          colors: colors,
+                          display: _fmtDate(_filter.confirmedAtFrom),
+                          isOpen: _open == 'confirmed_from',
+                          onTap: () => _toggle('confirmed_from'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _DateTile(
+                          colors: colors,
+                          display: _fmtDate(_filter.confirmedAtTo),
+                          isOpen: _open == 'confirmed_to',
+                          onTap: () => _toggle('confirmed_to'),
+                        ),
+                      ),
+                    ],
                   ),
-                  if (_open == 'confirmed')
+                  if (_open == 'confirmed_from')
                     _InlineCalendar(
                       colors: colors,
-                      selected: _filter.confirmedAt,
+                      selected: _filter.confirmedAtFrom,
                       onChanged: (d) => setState(() {
-                        _filter = _filter.copyWith(confirmedAt: d);
+                        _filter = _filter.copyWith(confirmedAtFrom: d);
+                        _open = null;
+                      }),
+                    ),
+                  if (_open == 'confirmed_to')
+                    _InlineCalendar(
+                      colors: colors,
+                      selected: _filter.confirmedAtTo,
+                      onChanged: (d) => setState(() {
+                        _filter = _filter.copyWith(confirmedAtTo: d);
                         _open = null;
                       }),
                     ),
@@ -289,7 +417,7 @@ class _ExpenseFilterScreenState extends State<ExpenseFilterScreen> {
             ),
           ),
 
-          // Bottom buttons
+          // ── Bottom buttons ───────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             decoration: BoxDecoration(
@@ -305,14 +433,15 @@ class _ExpenseFilterScreenState extends State<ExpenseFilterScreen> {
                       foregroundColor: colors.textStrong,
                       side: BorderSide(color: colors.strokeStrong),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     child: const Text(
                       'Tozalash',
                       style: TextStyle(
                         fontFamily: 'Manrope',
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                         fontSize: 15,
                       ),
                     ),
@@ -326,7 +455,8 @@ class _ExpenseFilterScreenState extends State<ExpenseFilterScreen> {
                       backgroundColor: colors.accentSub,
                       foregroundColor: colors.textWhite,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       elevation: 0,
                     ),
@@ -334,7 +464,7 @@ class _ExpenseFilterScreenState extends State<ExpenseFilterScreen> {
                       'Qidirish',
                       style: TextStyle(
                         fontFamily: 'Manrope',
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                         fontSize: 15,
                       ),
                     ),
@@ -349,12 +479,12 @@ class _ExpenseFilterScreenState extends State<ExpenseFilterScreen> {
   }
 }
 
-// ── Helper widgets ────────────────────────────────────────────────────────────
+// ── Widgets ───────────────────────────────────────────────────────────────────
 
-class _SectionLabel extends StatelessWidget {
+class _Label extends StatelessWidget {
   final String label;
   final AppColors colors;
-  const _SectionLabel({required this.label, required this.colors});
+  const _Label({required this.label, required this.colors});
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -363,8 +493,10 @@ class _SectionLabel extends StatelessWidget {
           label,
           style: TextStyle(
             fontFamily: 'Manrope',
-            fontSize: 13,
+            fontSize: 11,
             fontWeight: FontWeight.w500,
+            height: 16 / 11,
+            letterSpacing: 0.4,
             color: colors.textSub,
           ),
         ),
@@ -377,6 +509,7 @@ class _DropdownTile extends StatelessWidget {
   final String? value;
   final bool isOpen;
   final VoidCallback onTap;
+  final VoidCallback? onClear;
 
   const _DropdownTile({
     required this.colors,
@@ -384,21 +517,21 @@ class _DropdownTile extends StatelessWidget {
     required this.value,
     required this.isOpen,
     required this.onTap,
+    this.onClear,
   });
 
   @override
   Widget build(BuildContext context) => GestureDetector(
         onTap: onTap,
         child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
           decoration: BoxDecoration(
-            color: colors.backgroundBase,
+            color: const Color(0xFF111111),
             borderRadius: isOpen
                 ? const BorderRadius.vertical(top: Radius.circular(12))
                 : BorderRadius.circular(12),
             border: Border.all(
-              color: isOpen ? colors.accentSub : colors.strokeSub,
+              color: isOpen ? colors.accentSub : const Color(0xFF292A2A),
             ),
           ),
           child: Row(
@@ -410,19 +543,31 @@ class _DropdownTile extends StatelessWidget {
                     fontFamily: 'Manrope',
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: value != null
-                        ? colors.textStrong
-                        : colors.textSoft,
+                    color: value != null ? colors.textStrong : colors.textSoft,
                   ),
                 ),
               ),
-              Icon(
-                isOpen
-                    ? Icons.keyboard_arrow_up_rounded
-                    : Icons.keyboard_arrow_down_rounded,
-                color: colors.iconSub,
-                size: 20,
-              ),
+              if (value != null && onClear != null)
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onClear,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: colors.iconSub,
+                      size: 20,
+                    ),
+                  ),
+                )
+              else
+                Icon(
+                  isOpen
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  color: colors.iconSub,
+                  size: 20,
+                ),
             ],
           ),
         ),
@@ -459,7 +604,7 @@ class _OptionsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         decoration: BoxDecoration(
-          color: colors.backgroundBase,
+          color: const Color(0xFF111111),
           borderRadius:
               const BorderRadius.vertical(bottom: Radius.circular(12)),
           border: Border(
@@ -474,9 +619,10 @@ class _OptionsList extends StatelessWidget {
                 child: Text(
                   'Mavjud emas',
                   style: TextStyle(
-                      fontFamily: 'Manrope',
-                      fontSize: 13,
-                      color: colors.textSoft),
+                    fontFamily: 'Manrope',
+                    fontSize: 13,
+                    color: colors.textSoft,
+                  ),
                 ),
               )
             : Column(
@@ -485,18 +631,17 @@ class _OptionsList extends StatelessWidget {
                     onTap: () => onSelect(item),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: item.selected
-                            ? colors.accentDisabled
-                            : Colors.transparent,
+                        horizontal: 14,
+                        vertical: 12,
                       ),
+                      color: item.selected
+                          ? colors.accentDisabled
+                          : Colors.transparent,
                       child: Row(
                         children: [
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   item.title,
@@ -504,12 +649,13 @@ class _OptionsList extends StatelessWidget {
                                     fontFamily: 'Manrope',
                                     fontSize: 14,
                                     fontWeight: item.selected
-                                        ? FontWeight.w900
+                                        ? FontWeight.w700
                                         : FontWeight.w500,
                                     color: colors.textStrong,
                                   ),
                                 ),
-                                if (item.subtitle != null)
+                                if (item.subtitle != null &&
+                                    item.subtitle!.isNotEmpty)
                                   Text(
                                     item.subtitle!,
                                     maxLines: 1,
@@ -517,7 +663,6 @@ class _OptionsList extends StatelessWidget {
                                     style: TextStyle(
                                       fontFamily: 'Manrope',
                                       fontSize: 12,
-                                      fontWeight: FontWeight.w500,
                                       color: colors.textSoft,
                                     ),
                                   ),
@@ -531,7 +676,6 @@ class _OptionsList extends StatelessWidget {
                               style: TextStyle(
                                 fontFamily: 'Manrope',
                                 fontSize: 12,
-                                fontWeight: FontWeight.w500,
                                 color: colors.textSub,
                               ),
                             ),
@@ -547,14 +691,12 @@ class _OptionsList extends StatelessWidget {
 
 class _DateTile extends StatelessWidget {
   final AppColors colors;
-  final DateTime? value;
   final String display;
   final bool isOpen;
   final VoidCallback onTap;
 
   const _DateTile({
     required this.colors,
-    required this.value,
     required this.display,
     required this.isOpen,
     required this.onTap,
@@ -564,15 +706,14 @@ class _DateTile extends StatelessWidget {
   Widget build(BuildContext context) => GestureDetector(
         onTap: onTap,
         child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
           decoration: BoxDecoration(
-            color: colors.backgroundBase,
+            color: const Color(0xFF111111),
             borderRadius: isOpen
                 ? const BorderRadius.vertical(top: Radius.circular(12))
                 : BorderRadius.circular(12),
             border: Border.all(
-              color: isOpen ? colors.accentSub : colors.strokeSub,
+              color: isOpen ? colors.accentSub : const Color(0xFF292A2A),
             ),
           ),
           child: Row(
@@ -584,14 +725,15 @@ class _DateTile extends StatelessWidget {
                     fontFamily: 'Manrope',
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: value != null
-                        ? colors.textStrong
-                        : colors.textSoft,
+                    color: colors.textStrong,
                   ),
                 ),
               ),
-              Icon(Icons.calendar_today_outlined,
-                  size: 18, color: colors.iconSub),
+              Icon(
+                Icons.calendar_today_outlined,
+                size: 18,
+                color: colors.iconSub,
+              ),
             ],
           ),
         ),
@@ -612,7 +754,7 @@ class _InlineCalendar extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         decoration: BoxDecoration(
-          color: colors.backgroundBase,
+          color: const Color(0xFF111111),
           borderRadius:
               const BorderRadius.vertical(bottom: Radius.circular(12)),
           border: Border(
@@ -621,11 +763,20 @@ class _InlineCalendar extends StatelessWidget {
             bottom: BorderSide(color: colors.accentSub),
           ),
         ),
-        child: CalendarDatePicker(
-          initialDate: selected ?? DateTime.now(),
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2030),
-          onDateChanged: onChanged,
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+                  primary: colors.accentSub,
+                  onSurface: colors.textStrong,
+                  surface: const Color(0xFF111111),
+                ),
+          ),
+          child: CalendarDatePicker(
+            initialDate: selected ?? DateTime.now(),
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2030),
+            onDateChanged: onChanged,
+          ),
         ),
       );
 }
@@ -645,6 +796,7 @@ class _AmountField extends StatelessWidget {
   Widget build(BuildContext context) => TextField(
         controller: controller,
         keyboardType: TextInputType.number,
+        textAlign: TextAlign.right,
         style: TextStyle(
           fontFamily: 'Manrope',
           fontWeight: FontWeight.w500,
@@ -661,14 +813,14 @@ class _AmountField extends StatelessWidget {
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           filled: true,
-          fillColor: colors.backgroundBase,
+          fillColor: const Color(0xFF111111),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: colors.strokeSub),
+            borderSide: const BorderSide(color: Color(0xFF292A2A)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: colors.strokeSub),
+            borderSide: const BorderSide(color: Color(0xFF292A2A)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),

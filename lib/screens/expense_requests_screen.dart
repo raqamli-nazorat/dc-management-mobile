@@ -9,6 +9,7 @@ import 'package:dcmanagement/screens/expense_request_form_sheet.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class ExpenseRequestsScreen extends StatefulWidget {
   const ExpenseRequestsScreen({super.key});
@@ -131,36 +132,42 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
       if (_filter.amountMax != null && amount > _filter.amountMax!) {
         return false;
       }
-      if (_filter.createdAt != null) {
+      if (_filter.createdAtFrom != null || _filter.createdAtTo != null) {
         final raw = item['created_at'] as String?;
-        if (raw != null) {
-          final dt = DateTime.tryParse(raw);
-          if (dt != null &&
-              dt.isBefore(
-                _filter.createdAt!.copyWith(hour: 0, minute: 0, second: 0),
-              ))
-            return false;
+        final dt = raw != null ? DateTime.tryParse(raw) : null;
+        if (dt == null) return false;
+        if (_filter.createdAtFrom != null &&
+            dt.isBefore(_filter.createdAtFrom!.copyWith(hour: 0, minute: 0, second: 0))) {
+          return false;
         }
-      }
-      if (_filter.paidAt != null) {
-        final raw = item['paid_at'] as String?;
-        if (raw == null) return false;
-        final dt = DateTime.tryParse(raw);
-        if (dt == null ||
-            dt.isBefore(
-              _filter.paidAt!.copyWith(hour: 0, minute: 0, second: 0),
-            )) {
+        if (_filter.createdAtTo != null &&
+            dt.isAfter(_filter.createdAtTo!.copyWith(hour: 23, minute: 59, second: 59))) {
           return false;
         }
       }
-      if (_filter.confirmedAt != null) {
+      if (_filter.paidAtFrom != null || _filter.paidAtTo != null) {
+        final raw = item['paid_at'] as String?;
+        final dt = raw != null ? DateTime.tryParse(raw) : null;
+        if (dt == null) return false;
+        if (_filter.paidAtFrom != null &&
+            dt.isBefore(_filter.paidAtFrom!.copyWith(hour: 0, minute: 0, second: 0))) {
+          return false;
+        }
+        if (_filter.paidAtTo != null &&
+            dt.isAfter(_filter.paidAtTo!.copyWith(hour: 23, minute: 59, second: 59))) {
+          return false;
+        }
+      }
+      if (_filter.confirmedAtFrom != null || _filter.confirmedAtTo != null) {
         final raw = item['confirmed_at'] as String?;
-        if (raw == null) return false;
-        final dt = DateTime.tryParse(raw);
-        if (dt == null ||
-            dt.isBefore(
-              _filter.confirmedAt!.copyWith(hour: 0, minute: 0, second: 0),
-            )) {
+        final dt = raw != null ? DateTime.tryParse(raw) : null;
+        if (dt == null) return false;
+        if (_filter.confirmedAtFrom != null &&
+            dt.isBefore(_filter.confirmedAtFrom!.copyWith(hour: 0, minute: 0, second: 0))) {
+          return false;
+        }
+        if (_filter.confirmedAtTo != null &&
+            dt.isAfter(_filter.confirmedAtTo!.copyWith(hour: 23, minute: 59, second: 59))) {
           return false;
         }
       }
@@ -319,29 +326,29 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
                               onTap: () => setState(() => _searching = true),
                             ),
                             const SizedBox(width: 10),
-                            // Stack(
-                            //   clipBehavior: Clip.none,
-                            //   children: [
-                            //     _ActionButton(
-                            //       icon: LucideIcons.filter,
-                            //       colors: colors,
-                            //       onTap: () => _openFilter(colors),
-                            //     ),
-                            //     if (_filter.isActive)
-                            //       Positioned(
-                            //         top: 6,
-                            //         right: 6,
-                            //         child: Container(
-                            //           width: 8,
-                            //           height: 8,
-                            //           decoration: BoxDecoration(
-                            //             color: colors.accentSub,
-                            //             shape: BoxShape.circle,
-                            //           ),
-                            //         ),
-                            //       ),
-                            //   ],
-                            // ),
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                _ActionButton(
+                                  icon: LucideIcons.filter,
+                                  colors: colors,
+                                  onTap: () => _openFilter(colors),
+                                ),
+                                if (_filter.isActive)
+                                  Positioned(
+                                    top: 6,
+                                    right: 6,
+                                    child: Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        color: colors.accentSub,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ],
                         ),
                       

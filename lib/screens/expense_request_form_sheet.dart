@@ -3,23 +3,45 @@ import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/screens/expance_page_wrapper.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 Future<void> showExpenseRequestForm(BuildContext context) {
   return Navigator.of(
     context,
   ).push(MaterialPageRoute(builder: (_) => const ExpenseRequestPage()));
 }
-// ── Payment method options ────────────────────────────────────────────────────
 
 const _paymentOptions = [
   _Option(value: 'cash', label: "Naqt pul orqali"),
-  _Option(value: 'card', label: "Karta orqali"),
+  _Option(value: 'card', label: "Karta raqam orqali"),
 ];
 
 class _Option {
   final String value;
   final String label;
   const _Option({required this.value, required this.label});
+}
+
+// ── Card number formatter ─────────────────────────────────────────────────────
+
+class _CardNumberFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digits = newValue.text.replaceAll(' ', '');
+    final buffer = StringBuffer();
+    for (int i = 0; i < digits.length && i < 16; i++) {
+      if (i > 0 && i % 4 == 0) buffer.write(' ');
+      buffer.write(digits[i]);
+    }
+    final text = buffer.toString();
+    return TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
 }
 
 // ── Main form widget ──────────────────────────────────────────────────────────
@@ -46,13 +68,13 @@ class _ExpenseRequestFormState extends State<ExpenseRequestForm> {
 
   final _amountCtrl = TextEditingController();
   final _reasonCtrl = TextEditingController();
+  final _cardNumberCtrl = TextEditingController();
 
   bool _loadingDropdowns = true;
   bool _submitting = false;
 
   String? _openDropdown; // 'project','category','toifa','payment'
 
-  // Validation errors
   bool _projectError = false;
   bool _reasonError = false;
 
@@ -60,12 +82,14 @@ class _ExpenseRequestFormState extends State<ExpenseRequestForm> {
   void initState() {
     super.initState();
     _loadDropdowns();
+    _reasonCtrl.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
     _amountCtrl.dispose();
     _reasonCtrl.dispose();
+    _cardNumberCtrl.dispose();
     super.dispose();
   }
 
@@ -113,6 +137,9 @@ class _ExpenseRequestFormState extends State<ExpenseRequestForm> {
             : '0',
         'reason': _reasonCtrl.text.trim(),
         if (_selectedPayment != null) 'payment_method': _selectedPayment!.value,
+        if (_selectedPayment?.value == 'card' &&
+            _cardNumberCtrl.text.isNotEmpty)
+          'card_number': _cardNumberCtrl.text.replaceAll(' ', ''),
       });
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
@@ -148,8 +175,10 @@ class _ExpenseRequestFormState extends State<ExpenseRequestForm> {
                   "So'rov yuborish",
                   style: TextStyle(
                     fontFamily: 'Manrope',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    height: 28 / 17,
+                    letterSpacing: 0,
                     color: colors.textStrong,
                   ),
                   textAlign: TextAlign.center,
@@ -184,8 +213,18 @@ class _ExpenseRequestFormState extends State<ExpenseRequestForm> {
                           value: _selectedProject?['title'] as String?,
                           isOpen: _openDropdown == 'project',
                           onTap: () => _toggleDropdown('project'),
+                          onClear: _selectedProject != null
+                              ? () => setState(() {
+                                    _selectedProject = null;
+                                    _openDropdown = null;
+                                  })
+                              : null,
                         ),
-                        if (_projectError) _ErrorText(colors: colors),
+                        if (_projectError)
+                          _ErrorText(
+                            label: 'Loyiha tanlang',
+                            colors: colors,
+                          ),
                         if (_openDropdown == 'project')
                           _FormOptionsList(
                             colors: colors,
@@ -208,6 +247,12 @@ class _ExpenseRequestFormState extends State<ExpenseRequestForm> {
                           value: _selectedCategory?['title'] as String?,
                           isOpen: _openDropdown == 'category',
                           onTap: () => _toggleDropdown('category'),
+                          onClear: _selectedCategory != null
+                              ? () => setState(() {
+                                    _selectedCategory = null;
+                                    _openDropdown = null;
+                                  })
+                              : null,
                         ),
                         if (_openDropdown == 'category')
                           _FormOptionsList(
@@ -230,6 +275,12 @@ class _ExpenseRequestFormState extends State<ExpenseRequestForm> {
                           value: _selectedToifa?['title'] as String?,
                           isOpen: _openDropdown == 'toifa',
                           onTap: () => _toggleDropdown('toifa'),
+                          onClear: _selectedToifa != null
+                              ? () => setState(() {
+                                    _selectedToifa = null;
+                                    _openDropdown = null;
+                                  })
+                              : null,
                         ),
                         if (_openDropdown == 'toifa')
                           _FormOptionsList(
@@ -246,100 +297,44 @@ class _ExpenseRequestFormState extends State<ExpenseRequestForm> {
 
                         // Miqdori
                         _FormLabel(label: 'Miqdori', colors: colors),
-                        TextField(
+                        _StyledTextField(
+                          colors: colors,
                           controller: _amountCtrl,
+                          hint: 'Summani kiriting: 0,00',
                           keyboardType: TextInputType.number,
-                          style: TextStyle(
-                            fontFamily: 'Manrope',
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                            color: colors.textStrong,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Summani kiriting: 0,00',
-                            hintStyle: TextStyle(
-                              fontFamily: 'Manrope',
-                              fontSize: 14,
-                              color: colors.textSoft,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 14,
-                            ),
-                            filled: true,
-                            fillColor: colors.backgroundBase,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colors.strokeSub),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colors.strokeSub),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colors.accentSub),
-                            ),
-                          ),
                         ),
 
                         const SizedBox(height: 14),
 
                         // Sababi
                         _FormLabel(label: 'Sababi', colors: colors),
-                        TextField(
+                        _StyledTextField(
+                          colors: colors,
                           controller: _reasonCtrl,
+                          hint: 'Sababini yozing',
                           maxLines: 4,
                           onChanged: (_) {
                             if (_reasonError) {
                               setState(() => _reasonError = false);
                             }
                           },
-                          style: TextStyle(
-                            fontFamily: 'Manrope',
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                            color: colors.textStrong,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Sababini yozing',
-                            hintStyle: TextStyle(
-                              fontFamily: 'Manrope',
-                              fontSize: 14,
-                              color: colors.textSoft,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 14,
-                            ),
-                            filled: true,
-                            fillColor: colors.backgroundBase,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colors.strokeSub),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colors.strokeSub),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colors.accentSub),
-                            ),
-                            suffixIcon: _reasonCtrl.text.isNotEmpty
-                                ? IconButton(
-                                    icon: Icon(
-                                      Icons.close,
-                                      color: colors.iconSub,
-                                      size: 18,
-                                    ),
-                                    onPressed: () =>
-                                        setState(() => _reasonCtrl.clear()),
-                                  )
-                                : null,
-                          ),
+                          suffixIcon: _reasonCtrl.text.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(
+                                    Icons.close,
+                                    color: colors.iconSub,
+                                    size: 18,
+                                  ),
+                                  onPressed: () =>
+                                      setState(() => _reasonCtrl.clear()),
+                                )
+                              : null,
                         ),
-                        if (_reasonError) _ErrorText(colors: colors),
+                        if (_reasonError)
+                          _ErrorText(
+                            label: 'Bu maydon majburiy',
+                            colors: colors,
+                          ),
 
                         const SizedBox(height: 14),
 
@@ -351,59 +346,38 @@ class _ExpenseRequestFormState extends State<ExpenseRequestForm> {
                           value: _selectedPayment?.label,
                           isOpen: _openDropdown == 'payment',
                           onTap: () => _toggleDropdown('payment'),
+                          onClear: _selectedPayment != null
+                              ? () => setState(() {
+                                    _selectedPayment = null;
+                                    _cardNumberCtrl.clear();
+                                    _openDropdown = null;
+                                  })
+                              : null,
                         ),
                         if (_openDropdown == 'payment')
-                          Container(
-                            decoration: BoxDecoration(
-                              color: colors.backgroundBase,
-                              borderRadius: const BorderRadius.vertical(
-                                bottom: Radius.circular(12),
-                              ),
-                              border: Border(
-                                left: BorderSide(color: colors.accentSub),
-                                right: BorderSide(color: colors.accentSub),
-                                bottom: BorderSide(color: colors.accentSub),
-                              ),
-                            ),
-                            child: Column(
-                              children: _paymentOptions.map((opt) {
-                                final selected =
-                                    _selectedPayment?.value == opt.value;
-                                return InkWell(
-                                  onTap: () => setState(() {
-                                    _selectedPayment = opt;
-                                    _openDropdown = null;
-                                  }),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 14,
-                                    ),
-                                    color: selected
-                                        ? colors.accentDisabled
-                                        : Colors.transparent,
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            opt.label,
-                                            style: TextStyle(
-                                              fontFamily: 'Manrope',
-                                              fontSize: 14,
-                                              fontWeight: selected
-                                                  ? FontWeight.w900
-                                                  : FontWeight.w500,
-                                              color: colors.textStrong,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
+                          _PaymentOptionsList(
+                            colors: colors,
+                            options: _paymentOptions,
+                            selected: _selectedPayment,
+                            onSelect: (opt) => setState(() {
+                              _selectedPayment = opt;
+                              _cardNumberCtrl.clear();
+                              _openDropdown = null;
+                            }),
                           ),
+
+                        // Karta raqam (faqat karta tanlanganda)
+                        if (_selectedPayment?.value == 'card') ...[
+                          const SizedBox(height: 14),
+                          _FormLabel(label: 'Karta raqam', colors: colors),
+                          _StyledTextField(
+                            colors: colors,
+                            controller: _cardNumberCtrl,
+                            hint: '0000 0000 0000 0000',
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [_CardNumberFormatter()],
+                          ),
+                        ],
 
                         const SizedBox(height: 32),
                       ],
@@ -472,8 +446,10 @@ class _FormLabel extends StatelessWidget {
       label,
       style: TextStyle(
         fontFamily: 'Manrope',
-        fontSize: 13,
+        fontSize: 11,
         fontWeight: FontWeight.w500,
+        height: 16 / 11,
+        letterSpacing: 0.4,
         color: colors.textSub,
       ),
     ),
@@ -481,19 +457,81 @@ class _FormLabel extends StatelessWidget {
 }
 
 class _ErrorText extends StatelessWidget {
+  final String label;
   final AppColors colors;
-  const _ErrorText({required this.colors});
+  const _ErrorText({required this.label, required this.colors});
 
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(top: 4),
     child: Text(
-      'Bu maydon majburiy',
+      label,
       style: TextStyle(
         fontFamily: 'Manrope',
         fontSize: 12,
         fontWeight: FontWeight.w500,
         color: colors.errorSub,
+      ),
+    ),
+  );
+}
+
+class _StyledTextField extends StatelessWidget {
+  final AppColors colors;
+  final TextEditingController controller;
+  final String hint;
+  final int maxLines;
+  final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
+  final Widget? suffixIcon;
+  final ValueChanged<String>? onChanged;
+
+  const _StyledTextField({
+    required this.colors,
+    required this.controller,
+    required this.hint,
+    this.maxLines = 1,
+    this.keyboardType,
+    this.inputFormatters,
+    this.suffixIcon,
+    this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) => TextField(
+    controller: controller,
+    maxLines: maxLines,
+    keyboardType: keyboardType,
+    inputFormatters: inputFormatters,
+    onChanged: onChanged,
+    style: TextStyle(
+      fontFamily: 'Manrope',
+      fontWeight: FontWeight.w500,
+      fontSize: 14,
+      color: colors.textStrong,
+    ),
+    decoration: InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(
+        fontFamily: 'Manrope',
+        fontSize: 14,
+        color: colors.textSoft,
+      ),
+      suffixIcon: suffixIcon,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      filled: true,
+      fillColor: const Color(0xFF111111),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF292A2A)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF292A2A)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: colors.accentSub),
       ),
     ),
   );
@@ -505,6 +543,7 @@ class _FormDropdownTile extends StatelessWidget {
   final String? value;
   final bool isOpen;
   final VoidCallback onTap;
+  final VoidCallback? onClear;
 
   const _FormDropdownTile({
     required this.colors,
@@ -512,6 +551,7 @@ class _FormDropdownTile extends StatelessWidget {
     required this.value,
     required this.isOpen,
     required this.onTap,
+    this.onClear,
   });
 
   @override
@@ -520,11 +560,13 @@ class _FormDropdownTile extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
       decoration: BoxDecoration(
-        color: colors.backgroundBase,
+        color: const Color(0xFF111111),
         borderRadius: isOpen
             ? const BorderRadius.vertical(top: Radius.circular(12))
             : BorderRadius.circular(12),
-        border: Border.all(color: isOpen ? colors.accentSub : colors.strokeSub),
+        border: Border.all(
+          color: isOpen ? colors.accentSub : const Color(0xFF292A2A),
+        ),
       ),
       child: Row(
         children: [
@@ -539,13 +581,27 @@ class _FormDropdownTile extends StatelessWidget {
               ),
             ),
           ),
-          Icon(
-            isOpen
-                ? Icons.keyboard_arrow_up_rounded
-                : Icons.keyboard_arrow_down_rounded,
-            color: colors.iconSub,
-            size: 20,
-          ),
+          if (value != null && onClear != null)
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onClear,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Icon(
+                  Icons.close_rounded,
+                  color: colors.iconSub,
+                  size: 20,
+                ),
+              ),
+            )
+          else
+            Icon(
+              isOpen
+                  ? Icons.keyboard_arrow_up_rounded
+                  : Icons.keyboard_arrow_down_rounded,
+              color: colors.iconSub,
+              size: 20,
+            ),
         ],
       ),
     ),
@@ -568,7 +624,7 @@ class _FormOptionsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     decoration: BoxDecoration(
-      color: colors.backgroundBase,
+      color: const Color(0xFF111111),
       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
       border: Border(
         left: BorderSide(color: colors.accentSub),
@@ -605,7 +661,8 @@ class _FormOptionsList extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'Manrope',
                       fontSize: 14,
-                      fontWeight: selected ? FontWeight.w900 : FontWeight.w500,
+                      fontWeight:
+                          selected ? FontWeight.w700 : FontWeight.w500,
                       color: colors.textStrong,
                     ),
                   ),
@@ -613,5 +670,54 @@ class _FormOptionsList extends StatelessWidget {
               );
             }).toList(),
           ),
+  );
+}
+
+class _PaymentOptionsList extends StatelessWidget {
+  final AppColors colors;
+  final List<_Option> options;
+  final _Option? selected;
+  final ValueChanged<_Option> onSelect;
+
+  const _PaymentOptionsList({
+    required this.colors,
+    required this.options,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    decoration: BoxDecoration(
+      color: const Color(0xFF111111),
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+      border: Border(
+        left: BorderSide(color: colors.accentSub),
+        right: BorderSide(color: colors.accentSub),
+        bottom: BorderSide(color: colors.accentSub),
+      ),
+    ),
+    child: Column(
+      children: options.map((opt) {
+        final isSelected = selected?.value == opt.value;
+        return InkWell(
+          onTap: () => onSelect(opt),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            color: isSelected ? colors.accentDisabled : Colors.transparent,
+            child: Text(
+              opt.label,
+              style: TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: colors.textStrong,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    ),
   );
 }
