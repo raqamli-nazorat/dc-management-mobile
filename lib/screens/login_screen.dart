@@ -2,7 +2,7 @@ import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';   // ← Eye icon uchun qo'shildi
+import 'package:lucide_icons/lucide_icons.dart'; // ← Eye icon uchun qo'shildi
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -63,7 +63,10 @@ class _LoginScreenState extends State<LoginScreen> {
         if (!mounted) return;
 
         if (roles.isEmpty) {
-          setState(() => _errorMessage = "Rol topilmadi. Administrator bilan bog'laning.");
+          setState(
+            () => _errorMessage =
+                "Rol topilmadi. Administrator bilan bog'laning.",
+          );
         } else if (roles.length == 1) {
           context.go('/home');
         } else {
@@ -73,7 +76,9 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() => _errorMessage = "Login yoki parol noto'g'ri");
       }
     } catch (e) {
-      setState(() => _errorMessage = "Xatolik yuz berdi. Qayta urinib ko'ring.");
+      setState(
+        () => _errorMessage = "Xatolik yuz berdi. Qayta urinib ko'ring.",
+      );
       print("Login error: $e");
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -213,7 +218,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       // Login button
                       GestureDetector(
-                        onTap: (!_isFormValid || _isLoading) ? null : _onLoginPressed,
+                        onTap: (!_isFormValid || _isLoading)
+                            ? null
+                            : _onLoginPressed,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           width: double.infinity,
@@ -239,7 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.white,
+                                      color: Color.fromARGB(255, 192, 192, 192),
                                     ),
                                   ),
                           ),
@@ -276,7 +283,10 @@ class _LoginScreenState extends State<LoginScreen> {
           hintText: hint,
           hintStyle: TextStyle(color: colors.textSoft, fontSize: 15),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
         ),
       ),
     );
@@ -299,7 +309,10 @@ class _LoginScreenState extends State<LoginScreen> {
           hintText: "Parol",
           hintStyle: TextStyle(color: colors.textSoft, fontSize: 15),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
           suffixIcon: IconButton(
             icon: Icon(
               _isPasswordHidden ? LucideIcons.eyeOff : LucideIcons.eye,
