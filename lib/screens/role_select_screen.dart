@@ -42,14 +42,16 @@ class RoleSelectScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.backgroundBase,
       body: FutureBuilder<List<String>>(
         future: AuthService().getUserRoles(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: Colors.white),
+            return Center(
+              child: CircularProgressIndicator(color: colors.accentSub),
             );
           }
 
@@ -62,9 +64,9 @@ class RoleSelectScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "O‘zingiz uchun rolni tanlang",
-                    style: const TextStyle(
-                      color: Colors.white,
+                    "O’zingiz uchun rolni tanlang",
+                    style: TextStyle(
+                      color: colors.textStrong,
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
                       fontFamily: "Manrope",
@@ -72,9 +74,9 @@ class RoleSelectScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Tizim funksiyalariga kirish siz tanlagan rolga bog‘liq",
+                    "Tizim funksiyalariga kirish siz tanlagan rolga bog’liq",
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
+                      color: colors.textSub,
                       fontSize: 14,
                       height: 1.4,
                     ),
@@ -91,16 +93,16 @@ class RoleSelectScreen extends StatelessWidget {
                         return GestureDetector(
                           onTap: () async {
                             await StorageService().saveString(
-                              'selected_role',
+                              ‘selected_role’,
                               role,
                             );
                             if (!context.mounted) return;
-                            context.go('/home');
+                            context.go(‘/home’);
                           },
                           child: Container(
                             height: 68,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1C1C1E),
+                              color: colors.backgroundElevation1,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Row(
@@ -108,14 +110,14 @@ class RoleSelectScreen extends StatelessWidget {
                                 const SizedBox(width: 20),
                                 Icon(
                                   _getIcon(role),
-                                  color: Colors.white,
+                                  color: colors.iconStrong,
                                   size: 24,
                                 ),
                                 const SizedBox(width: 16),
                                 Text(
                                   _getTitle(role),
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: colors.textStrong,
                                     fontSize: 17,
                                     fontWeight: FontWeight.w600,
                                   ),

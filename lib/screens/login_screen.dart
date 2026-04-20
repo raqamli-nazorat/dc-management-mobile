@@ -212,8 +212,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 10),
                         Text(
                           _errorMessage!,
-                          style: const TextStyle(
-                            color: Color(0xFFEF4444),
+                          style: TextStyle(
+                            color: colors.errorSub,
                             fontSize: 13,
                           ),
                         ),
@@ -232,17 +232,17 @@ class _LoginScreenState extends State<LoginScreen> {
                           height: 52,
                           decoration: BoxDecoration(
                             color: _isFormValid
-                                ? const Color(0xFF5B6EF5)
-                                : const Color(0xFFF2F1F0),
+                                ? colors.accentSub
+                                : colors.backgroundElevation2,
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Center(
                             child: _isLoading
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 22,
                                     height: 22,
                                     child: CircularProgressIndicator(
-                                      color: Colors.white,
+                                      color: colors.textWhite,
                                       strokeWidth: 2.5,
                                     ),
                                   )
@@ -253,8 +253,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                       fontSize: 16,
                                       fontWeight: FontWeight.w300,
                                       color: _isFormValid
-                                          ? Colors.white
-                                          : const Color(0xFFC0C0C0),
+                                          ? colors.textWhite
+                                          : colors.textDisabled,
                                     ),
                                   ),
                           ),
@@ -281,22 +281,22 @@ class _LoginScreenState extends State<LoginScreen> {
       height: 56,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF222323),
+        color: colors.backgroundElevation1Alt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF474848), width: 1),
+        border: Border.all(color: colors.strokeSoft, width: 1),
       ),
       child: TextField(
         controller: controller,
-        style: const TextStyle(
+        style: TextStyle(
           fontFamily: "Manrope",
-          color: Colors.white,
+          color: colors.textStrong,
           fontSize: 15,
         ),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(
+          hintStyle: TextStyle(
             fontFamily: "Manrope",
-            color: Color(0xFF7A7A7A),
+            color: colors.textSoft,
             fontSize: 15,
           ),
           border: InputBorder.none,
@@ -314,23 +314,23 @@ class _LoginScreenState extends State<LoginScreen> {
       height: 56,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF222323),
+        color: colors.backgroundElevation1Alt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF474848), width: 1),
+        border: Border.all(color: colors.strokeSoft, width: 1),
       ),
       child: TextField(
         controller: _passwordController,
           obscureText: _isPasswordHidden,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: "Manrope",
-            color: Colors.white,
+            color: colors.textStrong,
             fontSize: 15,
           ),
           decoration: InputDecoration(
             hintText: "Parol",
-            hintStyle: const TextStyle(
+            hintStyle: TextStyle(
               fontFamily: "Manrope",
-              color: Color(0xFF7A7A7A),
+              color: colors.textSoft,
               fontSize: 15,
             ),
             border: InputBorder.none,
@@ -342,7 +342,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ? IconButton(
                     icon: Icon(
                       _isPasswordHidden ? LucideIcons.eyeOff : LucideIcons.eye,
-                      color: const Color(0xFF7A7A7A),
+                      color: colors.iconSoft,
                       size: 22,
                     ),
                     onPressed: () {

@@ -601,7 +601,7 @@ class _ExpenseCard extends StatelessWidget {
                     fontFamily: 'Manrope',
                     fontWeight: FontWeight.w900,
                     fontSize: 16,
-                    color: Colors.white,
+                    color: colors.iconStrong,
                   ),
                 ),
               ),

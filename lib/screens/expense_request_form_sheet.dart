@@ -150,7 +150,7 @@ class _ExpenseRequestFormState extends State<ExpenseRequestForm> {
               e.toString(),
               style: const TextStyle(fontFamily: 'Manrope'),
             ),
-            backgroundColor: Colors.red.shade700,
+            backgroundColor: AppColors.of(context).errorStrong,
           ),
         );
       }
@@ -520,14 +520,14 @@ class _StyledTextField extends StatelessWidget {
       suffixIcon: suffixIcon,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       filled: true,
-      fillColor: const Color(0xFF111111),
+      fillColor: colors.backgroundElevation1,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF292A2A)),
+        borderSide: BorderSide(color: colors.strokeSub),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF292A2A)),
+        borderSide: BorderSide(color: colors.strokeSub),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -560,12 +560,12 @@ class _FormDropdownTile extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
       decoration: BoxDecoration(
-        color: const Color(0xFF111111),
+        color: colors.backgroundElevation1,
         borderRadius: isOpen
             ? const BorderRadius.vertical(top: Radius.circular(12))
             : BorderRadius.circular(12),
         border: Border.all(
-          color: isOpen ? colors.accentSub : const Color(0xFF292A2A),
+          color: isOpen ? colors.accentSub : colors.strokeSub,
         ),
       ),
       child: Row(
@@ -624,7 +624,7 @@ class _FormOptionsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     decoration: BoxDecoration(
-      color: const Color(0xFF111111),
+      color: colors.backgroundElevation1,
       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
       border: Border(
         left: BorderSide(color: colors.accentSub),
@@ -689,7 +689,7 @@ class _PaymentOptionsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     decoration: BoxDecoration(
-      color: const Color(0xFF111111),
+      color: colors.backgroundElevation1,
       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
       border: Border(
         left: BorderSide(color: colors.accentSub),

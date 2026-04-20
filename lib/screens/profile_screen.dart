@@ -51,8 +51,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Chiqish',
-                style: TextStyle(color: Color(0xFFEF4444))),
+            child: Text('Chiqish',
+                style: TextStyle(color: colors.errorSub)),
           ),
         ],
       ),
@@ -248,22 +248,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
               width: double.infinity,
               height: 50,
               decoration: BoxDecoration(
-                color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                color: colors.errorSub.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                    color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
+                    color: colors.errorSub.withValues(alpha: 0.3)),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(LucideIcons.logOut, size: 18, color: Color(0xFFEF4444)),
-                  SizedBox(width: 8),
+                  Icon(LucideIcons.logOut, size: 18, color: colors.errorSub),
+                  const SizedBox(width: 8),
                   Text(
                     'Chiqish',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFFEF4444),
+                      color: colors.errorSub,
                     ),
                   ),
                 ],
@@ -349,8 +349,6 @@ class _ThemeOption extends StatelessWidget {
     required this.onTap,
   });
 
-  static const _accent = Color(0xFF5B6EF5);
-
   @override
   Widget build(BuildContext context) {
     return Expanded(
@@ -360,7 +358,7 @@ class _ThemeOption extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? _accent : Colors.transparent,
+            color: selected ? colors.accentSub : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(

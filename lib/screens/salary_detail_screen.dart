@@ -113,9 +113,7 @@ class SalaryDetailScreen extends StatelessWidget {
                           label: 'Jarima miqdori',
                           value: jarima != 0 ? '-${_fmt(jarima)}' : '0,00',
                           colors: colors,
-                          valueColor: jarima != 0
-                              ? const Color(0xFFEF4444)
-                              : null,
+                          valueColor: jarima != 0 ? colors.errorSub : null,
                         ),
                       ),
                     ],
@@ -157,7 +155,7 @@ class SalaryDetailScreen extends StatelessWidget {
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF34C759),
+                  backgroundColor: colors.accentSub,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
@@ -223,9 +221,9 @@ class _Field extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: BoxDecoration(
-              color: const Color(0xFF111111),
+              color: colors.backgroundElevation1,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF292A2A)),
+              border: Border.all(color: colors.strokeSub),
             ),
             child: Text(
               value,

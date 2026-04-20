@@ -292,7 +292,7 @@ class _DetailBody extends StatelessWidget {
 
           // Rolli
           _RoleRow(
-            dotColor: const Color(0xFFEF4444),
+            dotColor: AppColors.of(context).errorSub,
             label: 'Rolli',
             value: user.role.isEmpty ? 'Tanlash' : user.roleLabel,
             isPlaceholder: user.role.isEmpty,

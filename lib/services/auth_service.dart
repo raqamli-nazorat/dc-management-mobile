@@ -53,22 +53,35 @@ class AuthService {
     }
   }
 
-  Future<bool> signInWithPin(String pin) async {
+  /// Returns (success, throttleSeconds, isApiError).
+  /// throttleSeconds > 0 means API returned 429 — wait that many seconds.
+  /// isApiError is true when a network/server exception occurred.
+  Future<(bool, int?, bool)> signInWithPin(String pin) async {
     try {
       final username = await _storage.getString('plain_username');
       debugPrint('=== PIN LOGIN: username=$username, pin=$pin ===');
-      if (username == null || username.isEmpty) return false;
+      if (username == null || username.isEmpty) return (false, null, false);
 
       final response = await _api.login(username, pin);
       debugPrint('=== PIN LOGIN RESPONSE: $response ===');
 
       final success = response['success'] as bool? ?? false;
-      if (!success) return false;
+      if (!success) {
+        final error = response['error'] as Map<String, dynamic>?;
+        final errorId = (error?['errorId'] as num?)?.toInt();
+        if (errorId == 429) {
+          final msg = error?['errorMsg'] as String? ?? '';
+          final match = RegExp(r'(\d+)\s+second').firstMatch(msg);
+          final secs = match != null ? int.tryParse(match.group(1)!) : 30;
+          return (false, secs ?? 30, false);
+        }
+        return (false, null, false);
+      }
 
       final innerData = response['data'] as Map<String, dynamic>?;
       final accessToken = innerData?['access'] as String?;
       final refreshToken = innerData?['refresh'] as String?;
-      if (accessToken == null) return false;
+      if (accessToken == null) return (false, null, false);
 
       await _storage.saveString(StorageService.tokenKey, accessToken);
       if (refreshToken != null) {
@@ -76,10 +89,10 @@ class AuthService {
       }
 
       PinSession.instance.markVerified();
-      return true;
+      return (true, null, false);
     } catch (e) {
       debugPrint('=== PIN LOGIN ERROR: $e ===');
-      return false;
+      return (false, null, true);
     }
   }
 

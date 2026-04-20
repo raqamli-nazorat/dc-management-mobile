@@ -162,7 +162,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
                       final tab = _tabs[i];
                       final isActive = i == current;
                       final iconColor = isActive
-                          ? const Color(0xFF5B6EF5)
+                          ? colors.accentSub
                           : inactiveColor;
 
                       Widget icon;
@@ -251,14 +251,16 @@ class _AvatarIconState extends State<AvatarIcon> {
 
   @override
   Widget build(BuildContext context) {
-    const activeColor = Color(0xFF5B6EF5);
-    const activeBg = Color(0x155B6EF5);
+    final colors = AppColors.of(context);
+    final activeColor = colors.accentSub;
 
     return Container(
       width: 28,
       height: 28,
       decoration: BoxDecoration(
-        color: widget.isActive ? activeBg : const Color(0xFFE5E7EB),
+        color: widget.isActive
+            ? colors.accentDisabled
+            : colors.backgroundElevation2,
         shape: BoxShape.circle,
         border: widget.isActive
             ? Border.all(color: activeColor, width: 1.5)
@@ -270,7 +272,7 @@ class _AvatarIconState extends State<AvatarIcon> {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: widget.isActive ? activeColor : const Color(0xFF6B7280),
+          color: widget.isActive ? activeColor : colors.textSub,
         ),
       ),
     );

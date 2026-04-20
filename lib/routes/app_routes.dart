@@ -30,7 +30,7 @@ final appRouter = GoRouter(
     final onPin = location == '/pin';
 
     if (!loggedIn) return onLogin ? null : '/login';
-    if (onLogin) return '/pin';
+    if (onLogin) return PinSession.instance.verified ? '/home' : '/pin';
     if (!onPin && !PinSession.instance.verified) return '/pin';
     return null;
   },
@@ -43,7 +43,6 @@ final appRouter = GoRouter(
       builder: (context, state) =>
           UserDetailScreen(userId: int.parse(state.pathParameters['id']!)),
     ),
-
     // Finance sub screens
     GoRoute(
       path: '/finance/expense-requests',

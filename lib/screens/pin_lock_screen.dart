@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/services/auth_service.dart';
+import 'package:dcmanagement/services/pin_session.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,38 +13,78 @@ class PinScreen extends StatefulWidget {
   State<PinScreen> createState() => _PinScreenState();
 }
 
-class _PinScreenState extends State<PinScreen> {
+class _PinScreenState extends State<PinScreen>
+    with SingleTickerProviderStateMixin {
   final _auth = AuthService();
   String _pin = '';
   bool _isLoading = false;
   bool _pinVisible = false;
   String? _error;
-  String _username = '';
+  bool _isApiError = false;
   int? _pinLength;
+  int _throttleSeconds = 0;
+  Timer? _throttleTimer;
+  late AnimationController _shakeCtrl;
+  late Animation<double> _shakeAnim;
 
   @override
   void initState() {
     super.initState();
+    _shakeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
+    _shakeAnim = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0, end: -10), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -10, end: 10), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 10, end: -7), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: -7, end: 7), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 7, end: 0), weight: 1),
+    ]).animate(CurvedAnimation(parent: _shakeCtrl, curve: Curves.easeInOut));
     _loadData();
   }
 
+  @override
+  void dispose() {
+    _throttleTimer?.cancel();
+    _shakeCtrl.dispose();
+    super.dispose();
+  }
+
+  void _startThrottle(int seconds) {
+    _throttleTimer?.cancel();
+    setState(() {
+      _throttleSeconds = seconds;
+      _pin = '';
+      _error = null;
+      _isApiError = false;
+    });
+    _throttleTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      setState(() => _throttleSeconds--);
+      if (_throttleSeconds <= 0) t.cancel();
+    });
+  }
+
   Future<void> _loadData() async {
-    final name = await _auth.getUsername();
     final length = await _auth.getPasswordLength();
     if (mounted) {
       setState(() {
-        _username = name ?? '';
         _pinLength = length;
       });
     }
   }
 
   void _onKey(String digit) {
-    if (_isLoading) return;
+    if (_isLoading || _throttleSeconds > 0) return;
     if (_pinLength != null && _pin.length >= _pinLength!) return;
     setState(() {
       _pin += digit;
       _error = null;
+      _isApiError = false;
     });
     if (_pinLength != null && _pin.length == _pinLength!) {
       _submit();
@@ -54,17 +97,32 @@ class _PinScreenState extends State<PinScreen> {
   }
 
   Future<void> _submit() async {
-    if (_pin.isEmpty || _isLoading) return;
+    if (_pin.isEmpty || _isLoading || _throttleSeconds > 0) return;
     setState(() => _isLoading = true);
-    final success = await _auth.signInWithPin(_pin);
+    final (success, throttleSec, isApiError) = await _auth.signInWithPin(_pin);
     if (!mounted) return;
     if (success) {
+      PinSession.instance.markVerified();
       context.go('/home');
+    } else if (throttleSec != null) {
+      setState(() => _isLoading = false);
+      _startThrottle(throttleSec);
+    } else if (isApiError) {
+      _shakeCtrl.forward(from: 0);
+      setState(() {
+        _isLoading = false;
+        _pin = '';
+        _error =
+            'Server bilan ulanishda xatolik. Internet aloqasini tekshiring.';
+        _isApiError = true;
+      });
     } else {
+      _shakeCtrl.forward(from: 0);
       setState(() {
         _isLoading = false;
         _pin = '';
         _error = 'PIN noto\'g\'ri. Qayta urinib ko\'ring.';
+        _isApiError = false;
       });
     }
   }
@@ -74,17 +132,24 @@ class _PinScreenState extends State<PinScreen> {
     if (mounted) context.go('/login');
   }
 
+  String _formatTime(int seconds) {
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  bool get _isBlocked => _isLoading || _throttleSeconds > 0;
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-
     return Scaffold(
       backgroundColor: colors.backgroundBase,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // ── Header ────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
               child: Column(
@@ -114,94 +179,162 @@ class _PinScreenState extends State<PinScreen> {
 
             const Spacer(),
 
-            // PIN dots — grow dynamically
-            SizedBox(
-              height: 40,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(_pin.length, (i) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: _pinVisible
-                            ? Text(
-                                _pin[i],
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w700,
-                                  color: colors.textStrong,
+            // ── PIN dots (only filled ones shown) ─────────────────────────
+            AnimatedBuilder(
+              animation: _shakeAnim,
+              builder: (_, child) => Transform.translate(
+                offset: Offset(_shakeAnim.value, 0),
+                child: child,
+              ),
+              child: SizedBox(
+                height: 40,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(_pin.length, (i) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: _pinVisible
+                              ? Text(
+                                  _pin[i],
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                    color: colors.textStrong,
+                                  ),
+                                )
+                              : Container(
+                                  width: 14,
+                                  height: 14,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: colors.textStrong,
+                                  ),
                                 ),
-                              )
-                            : AnimatedContainer(
-                                duration: const Duration(milliseconds: 150),
-                                width: 14,
-                                height: 14,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: colors.textStrong,
-                                ),
-                              ),
-                      );
-                    }),
-                  ),
-                  // Eye icon — right side
-                  Positioned(
-                    right: 24,
-                    child: GestureDetector(
-                      onTap: () => setState(() => _pinVisible = !_pinVisible),
-                      child: Icon(
-                        _pinVisible
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                        size: 22,
-                        color: colors.iconSub,
+                        );
+                      }),
+                    ),
+                    Positioned(
+                      right: 24,
+                      child: GestureDetector(
+                        onTap: () =>
+                            setState(() => _pinVisible = !_pinVisible),
+                        child: Icon(
+                          _pinVisible
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          size: 22,
+                          color: colors.iconSub,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 
-            // Error
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Center(
-                  child: Text(
-                    _error!,
-                    style: const TextStyle(
-                      color: Color(0xFFEF4444),
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
+            // ── Status messages ───────────────────────────────────────────
+            SizedBox(
+              height: 56,
+              child: Center(
+                child: _isLoading
+                    ? SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: colors.accentSub,
+                        ),
+                      )
+                    : _throttleSeconds > 0
+                        ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Kirish vaqtincha bloklandi',
+                                style: TextStyle(
+                                  color: colors.errorSub,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Qayta urinish uchun: ',
+                                    style: TextStyle(
+                                      color: colors.textStrong,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  Text(
+                                    _formatTime(_throttleSeconds),
+                                    style: TextStyle(
+                                      color: colors.textStrong,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          )
+                        : _error != null
+                            ? Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 24),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      _isApiError
+                                          ? Icons.wifi_off_rounded
+                                          : Icons.error_outline_rounded,
+                                      size: 15,
+                                      color: colors.errorSub,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        _error!,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: colors.errorSub,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : const SizedBox.shrink(),
               ),
+            ),
 
-            const Spacer(),
+            const SizedBox(height: 8),
 
-            // Keypad
-            if (_isLoading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: 48),
-                  child: CircularProgressIndicator(color: Color(0xFF5B6EF5)),
-                ),
-              )
-            else
-              _Keypad(
+            // ── Keypad — always visible, no visual change when disabled ───
+            AbsorbPointer(
+              absorbing: _isBlocked,
+              child: _Keypad(
                 colors: colors,
                 onKey: _onKey,
                 onDelete: _onDelete,
                 onLogout: _switchAccount,
               ),
+            ),
           ],
         ),
       ),
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _Keypad extends StatelessWidget {
   final AppColors colors;
@@ -235,13 +368,12 @@ class _Keypad extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: _KeyButton(
                       colors: colors,
-                      transparent: true,
+                      isLogout: true,
                       onTap: onLogout,
-                      logoutStyle: true,
-                      child: const Icon(
+                      child: Icon(
                         Icons.logout_rounded,
                         size: 22,
-                        color: Color(0xFFEF4444),
+                        color: colors.errorSub,
                       ),
                     ),
                   ),
@@ -251,7 +383,6 @@ class _Keypad extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: _KeyButton(
-                      logoutStyle: false,
                       colors: colors,
                       onTap: () => onKey('0'),
                       child: Text(
@@ -271,8 +402,7 @@ class _Keypad extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: _KeyButton(
                       colors: colors,
-                      transparent: true,
-                      logoutStyle: false,
+                      isTransparent: true,
                       onTap: onDelete,
                       child: Icon(
                         Icons.arrow_back_rounded,
@@ -300,7 +430,6 @@ class _Keypad extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: _KeyButton(
                 colors: colors,
-                logoutStyle: false,
                 onTap: () => onKey(key),
                 child: Text(
                   key,
@@ -323,15 +452,15 @@ class _KeyButton extends StatelessWidget {
   final AppColors colors;
   final Widget child;
   final VoidCallback onTap;
-  final bool logoutStyle;
-  final bool transparent;
+  final bool isLogout;
+  final bool isTransparent;
 
   const _KeyButton({
     required this.colors,
     required this.child,
     required this.onTap,
-    this.logoutStyle = false,
-    this.transparent = false,
+    this.isLogout = false,
+    this.isTransparent = false,
   });
 
   @override
@@ -341,10 +470,14 @@ class _KeyButton extends StatelessWidget {
       child: Container(
         height: 72,
         decoration: BoxDecoration(
-          color: transparent ? Colors.transparent : colors.backgroundElevation1,
+          color: isTransparent
+              ? Colors.transparent
+              : colors.backgroundElevation1,
           borderRadius: BorderRadius.circular(32),
           border: Border.all(
-            color: logoutStyle ? colors.strokeSub : colors.strokeSub,
+            color: isLogout
+                ? colors.errorSub.withValues(alpha: 0.5)
+                : colors.strokeSub,
             width: 1,
           ),
         ),
