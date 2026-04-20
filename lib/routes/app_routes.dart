@@ -8,6 +8,7 @@ import 'package:dcmanagement/screens/pin_lock_screen.dart';
 import 'package:dcmanagement/screens/profile_screen.dart';
 import 'package:dcmanagement/screens/project_screen.dart';
 import 'package:dcmanagement/screens/user_detail_screen.dart';
+import 'package:dcmanagement/screens/user_filter_screen.dart';
 import 'package:dcmanagement/screens/users_scree.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:dcmanagement/services/pin_session.dart';
@@ -58,6 +59,18 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/select-role',
       builder: (context, state) => const RoleSelectScreen(),
+    ),
+
+    // Users filter — ShellRoute tashqarisida, bottom bar ko'rinmaydi
+    GoRoute(
+      path: '/users/filter',
+      builder: (context, state) {
+        final args = state.extra as Map<String, dynamic>;
+        return UserFilterScreen(
+          initial: args['filter'] as UserFilter,
+          availableRoles: (args['roles'] as List).cast<String>(),
+        );
+      },
     ),
 
     // ==================== ShellRoute (Bottom Navigation Bar bilan sahifalar) ====================

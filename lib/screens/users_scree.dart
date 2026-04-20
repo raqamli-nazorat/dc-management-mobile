@@ -1,13 +1,12 @@
 import 'package:dcmanagement/api/api.dart';
 import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/models/user_model.dart';
+import 'package:dcmanagement/screens/user_filter_screen.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:dcmanagement/widgets/worker_card.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
-
-enum _SortMode { none, alphabetical, salaryAsc, salaryDesc }
 
 class UsersScreen extends StatefulWidget {
   const UsersScreen({super.key});
@@ -26,12 +25,9 @@ class _UsersScreenState extends State<UsersScreen> {
   bool _loading = true;
   String? _error;
   String _searchQuery = '';
-
-  /// True when the user only has permission to see their own profile.
   bool _ownOnly = false;
 
-  _SortMode _sortMode = _SortMode.none;
-  String? _roleFilter; // null = all roles
+  UserFilter _filter = const UserFilter();
 
   @override
   void initState() {
@@ -54,7 +50,6 @@ class _UsersScreenState extends State<UsersScreen> {
         users = await _api.getUsers(token);
       } on ApiException catch (e) {
         if (e.statusCode == 403) {
-          // Regular user — show only their own profile
           final me = await _api.getMe(token);
           users = [me];
           _ownOnly = true;
@@ -79,7 +74,6 @@ class _UsersScreenState extends State<UsersScreen> {
   void _applyFilters() {
     List<UserModel> result = List.of(_all);
 
-    // 1. Search filter
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       result = result.where((u) {
@@ -89,31 +83,28 @@ class _UsersScreenState extends State<UsersScreen> {
       }).toList();
     }
 
-    // 2. Role filter
-    if (_roleFilter != null) {
-      result = result.where((u) => u.role == _roleFilter).toList();
+    if (_filter.role != null) {
+      result = result.where((u) => u.role == _filter.role).toList();
     }
 
-    // 3. Sort
-    switch (_sortMode) {
-      case _SortMode.alphabetical:
+    switch (_filter.sortMode) {
+      case UserSortMode.az:
         result.sort((a, b) => a.username.compareTo(b.username));
-        break;
-      case _SortMode.salaryAsc:
+      case UserSortMode.za:
+        result.sort((a, b) => b.username.compareTo(a.username));
+      case UserSortMode.salaryAsc:
         result.sort((a, b) {
           final sa = double.tryParse(a.fixedSalary) ?? 0;
           final sb = double.tryParse(b.fixedSalary) ?? 0;
           return sa.compareTo(sb);
         });
-        break;
-      case _SortMode.salaryDesc:
+      case UserSortMode.salaryDesc:
         result.sort((a, b) {
           final sa = double.tryParse(a.fixedSalary) ?? 0;
           final sb = double.tryParse(b.fixedSalary) ?? 0;
           return sb.compareTo(sa);
         });
-        break;
-      case _SortMode.none:
+      case UserSortMode.none:
         break;
     }
 
@@ -133,188 +124,38 @@ class _UsersScreenState extends State<UsersScreen> {
     return roles;
   }
 
-  bool get _hasActiveFilter =>
-      _sortMode != _SortMode.none || _roleFilter != null;
-
-  void _showFilterSheet() {
-    final colors = AppColors.of(context);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: colors.backgroundElevation1,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setSheetState) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Handle
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: colors.strokeSub,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-
-                  // Title row
-                  Row(
-                    children: [
-                      Text(
-                        'Filter',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: colors.textStrong,
-                        ),
-                      ),
-                      const Spacer(),
-                      if (_sortMode != _SortMode.none || _roleFilter != null)
-                        GestureDetector(
-                          onTap: () {
-                            setSheetState(() {});
-                            setState(() {
-                              _sortMode = _SortMode.none;
-                              _roleFilter = null;
-                              _applyFilters();
-                            });
-                          },
-                          child: Text(
-                            'Tozalash',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: colors.accentSub,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // --- Alifbo ---
-                  Text(
-                    'Alifbo bo\'yicha',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: colors.textSub,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _FilterChipRow(
-                    colors: colors,
-                    options: const ['A → Z'],
-                    selected: _sortMode == _SortMode.alphabetical
-                        ? 'A → Z'
-                        : null,
-                    onSelect: (val) {
-                      setSheetState(() {});
-                      setState(() {
-                        _sortMode = _sortMode == _SortMode.alphabetical
-                            ? _SortMode.none
-                            : _SortMode.alphabetical;
-                        _applyFilters();
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // --- Oylik ---
-                  Text(
-                    'Oylik bo\'yicha',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: colors.textSub,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _FilterChipRow(
-                    colors: colors,
-                    options: const ['O\'sish', 'Kamayish'],
-                    selected: _sortMode == _SortMode.salaryAsc
-                        ? 'O\'sish'
-                        : _sortMode == _SortMode.salaryDesc
-                        ? 'Kamayish'
-                        : null,
-                    onSelect: (val) {
-                      setSheetState(() {});
-                      setState(() {
-                        if (val == 'O\'sish') {
-                          _sortMode = _sortMode == _SortMode.salaryAsc
-                              ? _SortMode.none
-                              : _SortMode.salaryAsc;
-                        } else {
-                          _sortMode = _sortMode == _SortMode.salaryDesc
-                              ? _SortMode.none
-                              : _SortMode.salaryDesc;
-                        }
-                        _applyFilters();
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // --- Lavozim ---
-                  Text(
-                    'Lavozim bo\'yicha',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: colors.textSub,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _uniqueRoles.map((role) {
-                      final selected = _roleFilter == role;
-                      return GestureDetector(
-                        onTap: () {
-                          setSheetState(() {});
-                          setState(() {
-                            _roleFilter = selected ? null : role;
-                            _applyFilters();
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: selected
-                                ? colors.accentSub
-                                : colors.backgroundBase,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: selected
-                                  ? colors.accentSub
-                                  : colors.strokeSub,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
+  Future<void> _openFilterScreen() async {
+    final result = await context.push<UserFilter>(
+      '/users/filter',
+      extra: {
+        'filter': _filter,
+        'roles': _uniqueRoles,
       },
     );
+    if (result != null) {
+      setState(() {
+        _filter = result;
+        _applyFilters();
+      });
+    }
+  }
+
+  String _activeFilterLabel() {
+    final parts = <String>[];
+    if (_filter.role != null) parts.add(_filter.role!);
+    switch (_filter.sortMode) {
+      case UserSortMode.az:
+        parts.add('A → Z');
+      case UserSortMode.za:
+        parts.add('Z → A');
+      case UserSortMode.salaryAsc:
+        parts.add("Oylik o'sish");
+      case UserSortMode.salaryDesc:
+        parts.add('Oylik kamayish');
+      case UserSortMode.none:
+        break;
+    }
+    return parts.join(' · ');
   }
 
   @override
@@ -342,7 +183,6 @@ class _UsersScreenState extends State<UsersScreen> {
                   ),
                   const Spacer(),
                   if (!_ownOnly) ...[
-                    // Search button
                     GestureDetector(
                       onTap: () => setState(() => _searching = !_searching),
                       child: Container(
@@ -360,21 +200,19 @@ class _UsersScreenState extends State<UsersScreen> {
                         ),
                       ),
                     ),
-
                     const SizedBox(width: 8),
-
                     GestureDetector(
-                      onTap: _showFilterSheet,
+                      onTap: _openFilterScreen,
                       child: Container(
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: _hasActiveFilter
+                          color: _filter.hasActive
                               ? colors.accentSub
                               : colors.backgroundElevation1,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: _hasActiveFilter
+                            color: _filter.hasActive
                                 ? colors.accentSub
                                 : colors.strokeSub,
                           ),
@@ -382,7 +220,7 @@ class _UsersScreenState extends State<UsersScreen> {
                         child: Icon(
                           LucideIcons.filter,
                           size: 18,
-                          color: _hasActiveFilter
+                          color: _filter.hasActive
                               ? Colors.white
                               : colors.iconSub,
                         ),
@@ -419,8 +257,8 @@ class _UsersScreenState extends State<UsersScreen> {
                 ),
               ),
 
-            // Active filter chips
-            if (_hasActiveFilter && !_ownOnly)
+            // Active filter indicator
+            if (_filter.hasActive && !_ownOnly)
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                 child: Row(
@@ -439,8 +277,7 @@ class _UsersScreenState extends State<UsersScreen> {
                     ),
                     GestureDetector(
                       onTap: () => setState(() {
-                        _sortMode = _SortMode.none;
-                        _roleFilter = null;
+                        _filter = const UserFilter();
                         _applyFilters();
                       }),
                       child: Icon(
@@ -490,31 +327,11 @@ class _UsersScreenState extends State<UsersScreen> {
                 ),
               ),
 
-            // Body
             Expanded(child: _buildBody(colors)),
           ],
         ),
       ),
     );
-  }
-
-  String _activeFilterLabel() {
-    final parts = <String>[];
-
-    switch (_sortMode) {
-      case _SortMode.alphabetical:
-        parts.add('A → Z');
-        break;
-      case _SortMode.salaryAsc:
-        parts.add('Oylik o\'sish');
-        break;
-      case _SortMode.salaryDesc:
-        parts.add('Oylik kamayish');
-        break;
-      case _SortMode.none:
-        break;
-    }
-    return parts.join(' · ');
   }
 
   Widget _buildBody(AppColors colors) {
@@ -575,54 +392,6 @@ class _UsersScreenState extends State<UsersScreen> {
         user: _filtered[i],
         onTap: () => context.push('/users/${_filtered[i].id}'),
       ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Helper: filter chip row
-// ---------------------------------------------------------------------------
-class _FilterChipRow extends StatelessWidget {
-  const _FilterChipRow({
-    required this.colors,
-    required this.options,
-    required this.selected,
-    required this.onSelect,
-  });
-
-  final AppColors colors;
-  final List<String> options;
-  final String? selected;
-  final void Function(String) onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      children: options.map((opt) {
-        final isSelected = selected == opt;
-        return GestureDetector(
-          onTap: () => onSelect(opt),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: isSelected ? colors.accentSub : colors.backgroundBase,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isSelected ? colors.accentSub : colors.strokeSub,
-              ),
-            ),
-            child: Text(
-              opt,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: isSelected ? Colors.white : colors.textStrong,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
     );
   }
 }

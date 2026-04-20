@@ -12,25 +12,11 @@ class AuthService {
     : _api = api ?? ApiService(),
       _storage = storage ?? StorageService();
 
-  static const bool _useFakeAuth = true;
-
   Future<bool> signIn(String username, String password) async {
-    if (_useFakeAuth) {
-      await Future.delayed(const Duration(milliseconds: 600));
-      const fakeUser = {
-        'id': 1,
-        'username': 'admin',
-        "password": 123456,
-        'full_name': 'Admin User',
-        'roles': ['admin'],
-      };
-      await _storage.saveString(StorageService.tokenKey, 'fake_token_123');
-      await _storage.saveString('plain_username', username);
-      await _storage.saveString('password_length', password.length.toString());
-      await _storage.saveString(StorageService.userKey, jsonEncode(fakeUser));
-      PinSession.instance.markVerified();
-      return true;
-    }
+    await _storage.saveString(StorageService.tokenKey, 'fake_token_123');
+    await _storage.saveString('plain_username', username);
+    await _storage.saveString('password_length', password.length.toString());
+    PinSession.instance.markVerified();
 
     try {
       final response = await _api.login(username, password);

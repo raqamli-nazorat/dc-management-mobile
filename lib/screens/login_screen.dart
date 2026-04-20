@@ -229,7 +229,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           width: double.infinity,
-                          height: 50,
+                          height: 52,
                           decoration: BoxDecoration(
                             color: _isFormValid
                                 ? const Color(0xFF5B6EF5)
@@ -251,7 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     style: TextStyle(
                                       fontFamily: "Manrope",
                                       fontSize: 16,
-                                      fontWeight: FontWeight.w600,
+                                      fontWeight: FontWeight.w300,
                                       color: _isFormValid
                                           ? Colors.white
                                           : const Color(0xFFC0C0C0),
