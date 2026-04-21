@@ -1,4 +1,6 @@
 import 'package:dcmanagement/models/user_model.dart';
+import 'package:dcmanagement/services/pin_session.dart';
+import 'package:dcmanagement/services/storage_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
@@ -12,18 +14,84 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+class _TokenRefreshInterceptor extends Interceptor {
+  final Dio dio;
+  final StorageService storage;
+  bool _isRefreshing = false;
+
+  _TokenRefreshInterceptor(this.dio, this.storage);
+
+  @override
+  Future<void> onResponse(
+      Response response, ResponseInterceptorHandler handler) async {
+    // validateStatus allows 401 through as a normal response — catch it here
+    if (response.statusCode == 401 &&
+        !response.requestOptions.path.contains('auth/token/refresh/') &&
+        !_isRefreshing) {
+      _isRefreshing = true;
+      try {
+        final refreshToken = await storage.getString('refresh_token');
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final refreshDio = Dio(BaseOptions(
+            baseUrl: dio.options.baseUrl,
+            validateStatus: (s) => s != null && s < 600,
+          ));
+          final refreshResponse = await refreshDio.post(
+            'auth/token/refresh/',
+            data: {'refresh': refreshToken},
+          );
+
+          final body = refreshResponse.data as Map<String, dynamic>?;
+          final success = body?['success'] as bool? ?? false;
+          final dataMap = body?['data'] as Map<String, dynamic>?;
+          final newAccess =
+              (dataMap?['access'] ?? body?['access']) as String?;
+
+          if (newAccess != null && (success || dataMap == null)) {
+            debugPrint('=== TOKEN REFRESHED, retrying request ===');
+            await storage.saveString(StorageService.tokenKey, newAccess);
+            final opts = response.requestOptions;
+            opts.headers['Authorization'] = 'Bearer $newAccess';
+            final retryResponse = await dio.fetch(opts);
+            _isRefreshing = false;
+            return handler.resolve(retryResponse);
+          }
+        }
+      } catch (e) {
+        debugPrint('=== TOKEN REFRESH ERROR: $e ===');
+      }
+      // Refresh ham ishlamadi — foydalanuvchini login sahifasiga yo'naltiramiz
+      debugPrint('=== SESSION EXPIRED: logging out ===');
+      await _forceLogout();
+      _isRefreshing = false;
+    }
+    return handler.next(response);
+  }
+
+  Future<void> _forceLogout() async {
+    await storage.clear();
+    PinSession.instance.reset(); // router refresh => /login
+  }
+}
+
 class ApiService {
   final Dio _dio;
+  final StorageService _storage;
 
-  ApiService({String baseUrl = 'https://backend.raqamlinazorat.uz/api/'})
-    : _dio = Dio(
-        BaseOptions(
-          baseUrl: baseUrl,
-          followRedirects: true,
-          maxRedirects: 5,
-          validateStatus: (status) => status != null && status < 500,
-        ),
-      );
+  ApiService({
+    String baseUrl = 'https://backend.raqamlinazorat.uz/api/',
+    StorageService? storage,
+  })  : _storage = storage ?? StorageService(),
+        _dio = Dio(
+          BaseOptions(
+            baseUrl: baseUrl,
+            followRedirects: true,
+            maxRedirects: 5,
+            validateStatus: (status) => status != null && status < 500,
+          ),
+        ) {
+    _dio.interceptors.add(_TokenRefreshInterceptor(_dio, _storage));
+  }
 
   Options _auth(String token) =>
       Options(headers: {'Authorization': 'Bearer $token'});
@@ -170,6 +238,15 @@ class ApiService {
         await _dio.get('expense-request/$id/', options: _auth(token));
     final body = response.data as Map<String, dynamic>;
     return _unwrap(body) as Map<String, dynamic>;
+  }
+
+  Future<void> confirmExpenseRequest(String token, int id) async {
+    final response = await _dio.post(
+      'expense-request/$id/confirm/',
+      options: _auth(token),
+    );
+    final body = response.data as Map<String, dynamic>;
+    _unwrap(body);
   }
 
   Future<void> createExpenseRequest(

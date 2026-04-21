@@ -1,6 +1,7 @@
 import 'package:dcmanagement/api/api.dart';
 import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/services/auth_service.dart';
+import 'package:dcmanagement/services/role_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -18,6 +19,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
   Map<String, dynamic>? _data;
   bool _loading = true;
   String? _error;
+  bool _confirmed = false;
 
   @override
   void initState() {
@@ -26,12 +28,18 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
   }
 
   Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final token = await _auth.getToken();
       if (token == null) throw Exception('Token topilmadi');
       final data = await _api.getExpenseRequestDetail(token, widget.id);
       setState(() {
         _data = data;
+        _confirmed = (data['status'] as String?) == 'confirmed' ||
+            (data['status'] as String?) == 'paid';
         _loading = false;
       });
     } catch (e) {
@@ -40,6 +48,41 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
         _loading = false;
       });
     }
+  }
+
+  Future<void> _confirmRequest() async {
+    try {
+      final token = await _auth.getToken();
+      if (token == null) throw Exception('Token topilmadi');
+      await _api.confirmExpenseRequest(token, widget.id);
+      setState(() => _confirmed = true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString(),
+            style: const TextStyle(fontFamily: 'Manrope'),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _showConfirmModal(AppColors colors) async {
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => _ConfirmModal(
+        colors: colors,
+        onConfirm: () async {
+          Navigator.of(ctx).pop();
+          await _confirmRequest();
+        },
+      ),
+    );
   }
 
   String _formatDate(String? raw) {
@@ -60,6 +103,8 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
         .replaceAll(',', ' ')
         .replaceAll('.', ',');
   }
+
+  bool get _isManager => RoleService.instance.group == 'manager';
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +131,43 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
         centerTitle: true,
       ),
       body: _buildBody(colors),
+      bottomNavigationBar: _buildBottomBar(colors),
+    );
+  }
+
+  Widget? _buildBottomBar(AppColors colors) {
+    if (_loading || _error != null || _data == null) return null;
+    if (!_isManager) return null;
+    if (_confirmed) return null;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        child: SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: () => _showConfirmModal(colors),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF02D15C),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: const Text(
+              'Tasdiqlash',
+              style: TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -149,7 +231,6 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar
           Center(
             child: Container(
               width: 90,
@@ -173,8 +254,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
             ),
           ),
 
-          _InfoField(
-              label: 'Ism Sharifi', value: username, colors: colors),
+          _InfoField(label: 'Ism Sharifi', value: username, colors: colors),
           const SizedBox(height: 12),
           _InfoField(
               label: 'Loyiha',
@@ -213,7 +293,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
           ),
           const SizedBox(height: 12),
           _InfoField(
-            label: 'Tastiqlangan vaqt',
+            label: 'Tasdiqlangan vaqt',
             value: _formatDate(_data!['confirmed_at'] as String?),
             colors: colors,
           ),
@@ -222,6 +302,136 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
     );
   }
 }
+
+// ── Confirm Modal ─────────────────────────────────────────────────────────────
+
+class _ConfirmModal extends StatelessWidget {
+  final AppColors colors;
+  final VoidCallback onConfirm;
+
+  const _ConfirmModal({required this.colors, required this.onConfirm});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+      decoration: BoxDecoration(
+        color: colors.backgroundElevation1,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0xFF02D15C).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(
+              Icons.check_circle_outline_rounded,
+              color: Color(0xFF02D15C),
+              size: 26,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "Ish haqqini tasdiqlaysizmi?",
+            style: TextStyle(
+              fontFamily: 'Manrope',
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: colors.textStrong,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Tasdiqlangandan so'ng bu amalni bekor qilib bo'lmaydi",
+            style: TextStyle(
+              fontFamily: 'Manrope',
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: colors.textSub,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              // Bekor qilish
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: colors.strokeSub),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.close_rounded,
+                            color: colors.textSub, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Bekor qilish',
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: colors.textSub,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Tasdiqlash
+              Expanded(
+                child: GestureDetector(
+                  onTap: onConfirm,
+                  child: Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF02D15C),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.check_rounded,
+                            color: Colors.white, size: 18),
+                        SizedBox(width: 6),
+                        Text(
+                          'Tasdiqlash',
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 class _InitialAvatar extends StatelessWidget {
   final String initial;
@@ -265,8 +475,7 @@ class _InfoField extends StatelessWidget {
           const SizedBox(height: 6),
           Container(
             width: double.infinity,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: BoxDecoration(
               color: colors.backgroundElevation1,
               borderRadius: BorderRadius.circular(12),

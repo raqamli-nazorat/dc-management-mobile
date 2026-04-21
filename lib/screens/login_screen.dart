@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +21,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isPasswordHidden = true;
   bool _isLoading = false;
   String? _errorMessage;
+  int _throttleSeconds = 0;
+  Timer? _throttleTimer;
 
   bool get _isFormValid =>
       _usernameController.text.trim().isNotEmpty &&
@@ -33,14 +37,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+    _throttleTimer?.cancel();
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
+  void _startThrottleTimer(int seconds) {
+    _throttleTimer?.cancel();
+    setState(() => _throttleSeconds = seconds);
+    _throttleTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() => _throttleSeconds--);
+      if (_throttleSeconds <= 0) {
+        timer.cancel();
+        setState(() => _errorMessage = null);
+      }
+    });
+  }
+
   void _onChanged() => setState(() {});
 
   Future<void> _onLoginPressed() async {
+    if (_throttleSeconds > 0) return;
+
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -55,8 +78,14 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final success = await _authService.signIn(username, password);
+      final (success, throttleSecs) = await _authService.signIn(username, password);
       if (!mounted) return;
+
+      if (throttleSecs != null && throttleSecs > 0) {
+        _startThrottleTimer(throttleSecs);
+        setState(() => _isLoading = false);
+        return;
+      }
 
       if (success) {
         final roles = await _authService.getUserRoles();
@@ -79,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(
         () => _errorMessage = "Xatolik yuz berdi. Qayta urinib ko'ring.",
       );
-      print("Login error: $e");
+      debugPrint("Login error: $e");
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -208,7 +237,36 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Password with Eye Button
                       _passwordField(colors),
 
-                      if (_errorMessage != null) ...[
+                      if (_throttleSeconds > 0) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: colors.errorSub.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: colors.errorSub.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(LucideIcons.timer,
+                                  color: colors.errorSub, size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  "Juda ko'p urinish. $_throttleSeconds soniyadan so'ng qayta urinib ko'ring.",
+                                  style: TextStyle(
+                                    color: colors.errorSub,
+                                    fontSize: 13,
+                                    fontFamily: "Manrope",
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else if (_errorMessage != null) ...[
                         const SizedBox(height: 10),
                         Text(
                           _errorMessage!,
@@ -223,7 +281,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       // Login button
                       GestureDetector(
-                        onTap: (!_isFormValid || _isLoading)
+                        onTap: (!_isFormValid || _isLoading || _throttleSeconds > 0)
                             ? null
                             : _onLoginPressed,
                         child: AnimatedContainer(
@@ -231,7 +289,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: double.infinity,
                           height: 52,
                           decoration: BoxDecoration(
-                            color: _isFormValid
+                            color: (_isFormValid && _throttleSeconds == 0)
                                 ? colors.accentSub
                                 : colors.backgroundElevation2,
                             borderRadius: BorderRadius.circular(16),
@@ -247,12 +305,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   )
                                 : Text(
-                                    "Kirish",
+                                    _throttleSeconds > 0
+                                        ? "$_throttleSeconds s"
+                                        : "Kirish",
                                     style: TextStyle(
                                       fontFamily: "Manrope",
                                       fontSize: 16,
                                       fontWeight: FontWeight.w300,
-                                      color: _isFormValid
+                                      color: (_isFormValid && _throttleSeconds == 0)
                                           ? colors.textWhite
                                           : colors.textDisabled,
                                     ),

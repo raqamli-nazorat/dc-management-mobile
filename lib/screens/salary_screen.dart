@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:dcmanagement/api/api.dart';
 import 'package:dcmanagement/colors/app_colors.dart';
+import 'package:dcmanagement/screens/expense_detail_screen.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:dcmanagement/widgets/app_state_widgets.dart';
 import 'package:dcmanagement/widgets/info_row.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class SalaryScreen extends StatefulWidget {
   const SalaryScreen({super.key});
@@ -73,7 +75,7 @@ class _SalaryScreenState extends State<SalaryScreen> {
     try {
       final token = await _auth.getToken();
       if (token == null) throw Exception('Token topilmadi');
-      final data = await _api.getPayrolls(token);
+      final data = await _api.getExpenseRequests(token);
       setState(() {
         _all = data;
         _filtered = data;
@@ -103,9 +105,12 @@ class _SalaryScreenState extends State<SalaryScreen> {
     setState(() {
       _filtered = _all.where((item) {
         final user = item['user_info'] as Map<String, dynamic>? ?? {};
-        final username = (user['username'] as String? ?? '').toLowerCase();
-        final month = (item['month_display'] as String? ?? '').toLowerCase();
-        return username.contains(query) || month.contains(query);
+        final project = item['project_info'] as Map<String, dynamic>? ?? {};
+        final category =
+            item['expense_category_info'] as Map<String, dynamic>? ?? {};
+        return (user['username'] as String? ?? '').toLowerCase().contains(query) ||
+            (project['title'] as String? ?? '').toLowerCase().contains(query) ||
+            (category['title'] as String? ?? '').toLowerCase().contains(query);
       }).toList();
     });
   }
@@ -174,7 +179,7 @@ class _SalaryScreenState extends State<SalaryScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            'Ish haqi',
+                            "Xarajat so'rovlari",
                             style: TextStyle(
                               fontFamily: 'Manrope',
                               fontSize: 22,
@@ -184,8 +189,8 @@ class _SalaryScreenState extends State<SalaryScreen> {
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.search_rounded,
-                              color: colors.iconSub, size: 24),
+                          icon: Icon(LucideIcons.search,
+                              color: colors.iconSub, size: 22),
                           onPressed: () =>
                               setState(() => _searching = true),
                         ),
@@ -237,7 +242,7 @@ class _SalaryScreenState extends State<SalaryScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    "Hozircha ish haqlari yo'q",
+                    "Hozircha so'rovlar yo'q",
                     style: TextStyle(
                       fontFamily: 'Manrope',
                       fontSize: 16,
@@ -259,21 +264,33 @@ class _SalaryScreenState extends State<SalaryScreen> {
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
         itemCount: _filtered.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 10),
-        itemBuilder: (context, index) =>
-            _PayrollCard(item: _filtered[index], colors: colors),
+        separatorBuilder: (context2, i) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          final item = _filtered[index];
+          return GestureDetector(
+            onTap: () {
+              final id = item['id'] as int?;
+              if (id == null) return;
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) => ExpenseDetailScreen(id: id)),
+              );
+            },
+            child: _ExpenseCard(item: item, colors: colors),
+          );
+        },
       ),
     );
   }
 }
 
-// ── Payroll Card ──────────────────────────────────────────────────────────────
+// ── Card ──────────────────────────────────────────────────────────────────────
 
-class _PayrollCard extends StatelessWidget {
+class _ExpenseCard extends StatelessWidget {
   final Map<String, dynamic> item;
   final AppColors colors;
 
-  const _PayrollCard({required this.item, required this.colors});
+  const _ExpenseCard({required this.item, required this.colors});
 
   static const _avatarColors = [
     Color(0xFF7C6AF7),
@@ -291,7 +308,7 @@ class _PayrollCard extends StatelessWidget {
     return _avatarColors[name.codeUnitAt(0) % _avatarColors.length];
   }
 
-  String _fmt(dynamic raw) {
+  String _formatAmount(dynamic raw) {
     final num value = num.tryParse(raw?.toString() ?? '') ?? 0;
     final formatter = NumberFormat('#,##0.00', 'en_US');
     return formatter
@@ -300,12 +317,44 @@ class _PayrollCard extends StatelessWidget {
         .replaceAll('.', ',');
   }
 
+  Color _statusColor(String status, AppColors colors) {
+    switch (status) {
+      case 'confirmed':
+        return const Color(0xFF34C759);
+      case 'paid':
+        return const Color(0xFF007AFF);
+      case 'rejected':
+        return colors.errorSub;
+      default:
+        return colors.iconSoft;
+    }
+  }
+
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'confirmed':
+        return 'Tasdiqlangan';
+      case 'paid':
+        return "To'langan";
+      case 'rejected':
+        return 'Rad etilgan';
+      default:
+        return 'Kutilmoqda';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = item['user_info'] as Map<String, dynamic>? ?? {};
+    final project = item['project_info'] as Map<String, dynamic>? ?? {};
+    final category =
+        item['expense_category_info'] as Map<String, dynamic>? ?? {};
+
     final username = user['username'] as String? ?? '—';
-    final monthDisplay = item['month_display'] as String? ?? '—';
-    final isConfirmed = item['is_confirmed'] as bool? ?? false;
+    final projectTitle = project['title'] as String? ?? '—';
+    final categoryTitle = category['title'] as String? ?? '—';
+    final amount = _formatAmount(item['amount']);
+    final status = item['status'] as String? ?? 'pending';
     final initial = username.isNotEmpty ? username[0].toUpperCase() : '?';
     final avatarColor = _avatarColor(username);
 
@@ -319,7 +368,6 @@ class _PayrollCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top: avatar + ism/oy
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -350,12 +398,14 @@ class _PayrollCard extends StatelessWidget {
                       colors: colors,
                       label: 'Ism sharifi:  ',
                       value: username,
+                      valueBold: true,
                     ),
                     const SizedBox(height: 2),
                     InfoRow(
                       colors: colors,
-                      label: 'Oy:  ',
-                      value: monthDisplay,
+                      label: 'Loyiha:  ',
+                      value: projectTitle,
+                      valueBold: true,
                     ),
                   ],
                 ),
@@ -365,41 +415,40 @@ class _PayrollCard extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          // KPI bonus
           InfoRow(
             colors: colors,
-            label: 'KPI bonus:  ',
-            value: _fmt(item['kpi_bonus']),
+            label: 'Xarajat turi:  ',
+            value: categoryTitle,
+            valueBold: true,
           ),
           const SizedBox(height: 4),
-
-          // Jami miqdori + checkbox
           Row(
             children: [
               Expanded(
                 child: InfoRow(
                   colors: colors,
-                  label: 'Jami miqdori:  ',
-                  value: _fmt(item['total_amount']),
+                  label: 'Summasi:  ',
+                  value: amount,
+                  valueBold: true,
                 ),
               ),
               const SizedBox(width: 8),
               Container(
-                width: 28,
-                height: 28,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isConfirmed
-                      ? const Color(0xFF34C759)
-                      : colors.backgroundElevation2,
-                  borderRadius: BorderRadius.circular(6),
-                  border: isConfirmed
-                      ? null
-                      : Border.all(color: colors.strokeStrong),
+                  color: _statusColor(status, colors).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: isConfirmed
-                    ? const Icon(Icons.check_rounded,
-                        color: Colors.white, size: 18)
-                    : null,
+                child: Text(
+                  _statusLabel(status),
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: _statusColor(status, colors),
+                  ),
+                ),
               ),
             ],
           ),
@@ -408,4 +457,3 @@ class _PayrollCard extends StatelessWidget {
     );
   }
 }
-

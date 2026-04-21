@@ -12,18 +12,25 @@ class AuthService {
     : _api = api ?? ApiService(),
       _storage = storage ?? StorageService();
 
-  Future<bool> signIn(String username, String password) async {
-    await _storage.saveString(StorageService.tokenKey, 'fake_token_123');
-    await _storage.saveString('plain_username', username);
-    await _storage.saveString('password_length', password.length.toString());
-    PinSession.instance.markVerified();
-
+  /// Returns (success, throttleSeconds).
+  /// throttleSeconds > 0 means 429 — show countdown.
+  Future<(bool, int?)> signIn(String username, String password) async {
     try {
       final response = await _api.login(username, password);
       debugPrint('=== AUTH SERVICE: full response: $response ===');
 
       final success = response['success'] as bool? ?? false;
-      if (!success) return false;
+      if (!success) {
+        final error = response['error'] as Map<String, dynamic>?;
+        final errorId = (error?['errorId'] as num?)?.toInt();
+        if (errorId == 429) {
+          final msg = error?['errorMsg'] as String? ?? '';
+          final match = RegExp(r'(\d+)\s+second').firstMatch(msg);
+          final secs = match != null ? int.tryParse(match.group(1)!) : 30;
+          return (false, secs ?? 30);
+        }
+        return (false, null);
+      }
 
       final innerData = response['data'] as Map<String, dynamic>?;
       final accessToken = innerData?['access'] as String?;
@@ -31,7 +38,7 @@ class AuthService {
       final user = innerData?['user'] as Map<String, dynamic>?;
 
       debugPrint('=== AUTH SERVICE: access=$accessToken ===');
-      if (accessToken == null) return false;
+      if (accessToken == null) return (false, null);
 
       await _storage.saveString(StorageService.tokenKey, accessToken);
       await _storage.saveString('plain_username', username);
@@ -45,11 +52,11 @@ class AuthService {
 
       PinSession.instance.markVerified();
       debugPrint('=== AUTH SERVICE: login muvaffaqiyatli ===');
-      return true;
+      return (true, null);
     } catch (e, stack) {
       debugPrint('=== AUTH SERVICE ERROR: $e ===');
       debugPrint('=== STACK: $stack ===');
-      return false;
+      return (false, null);
     }
   }
 

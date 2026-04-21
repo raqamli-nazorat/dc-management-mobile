@@ -84,7 +84,8 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
         reason.isEmpty ||
         _selectedPayment == null) {
       setState(
-          () => _submitError = "Iltimos barcha majburiy maydonlarni to'ldiring");
+        () => _submitError = "Iltimos barcha majburiy maydonlarni to'ldiring",
+      );
       return;
     }
     if (_isCard && _cardCtrl.text.trim().isEmpty) {
@@ -209,20 +210,19 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
                 icon: Container(
                   width: 36,
                   height: 36,
-                  decoration: BoxDecoration(
-                    color: colors.backgroundElevation2,
-                    shape: BoxShape.circle,
+                  child: Icon(
+                    Icons.close,
+                    size: 20,
+                    weight: 900,
+                    color: colors.iconSub,
                   ),
-                  child: Icon(Icons.close_rounded,
-                      size: 20, color: colors.iconSub),
                 ),
-                padding: EdgeInsets.zero,
               ),
             ],
           ),
         ),
 
-        Divider(height: 1, color: colors.strokeSub),
+        // Divider(height: 1, color: colors.strokeSub),
 
         // ── Scrollable fields ────────────────────────────────────────────────
         Expanded(
@@ -245,8 +245,7 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
                         colors: colors,
                         onSelect: (item) =>
                             setState(() => _selectedProject = item),
-                        onClear: () =>
-                            setState(() => _selectedProject = null),
+                        onClear: () => setState(() => _selectedProject = null),
                       ),
                       const SizedBox(height: 16),
 
@@ -260,8 +259,7 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
                         colors: colors,
                         onSelect: (item) =>
                             setState(() => _selectedCategory = item),
-                        onClear: () =>
-                            setState(() => _selectedCategory = null),
+                        onClear: () => setState(() => _selectedCategory = null),
                       ),
                       const SizedBox(height: 16),
 
@@ -306,7 +304,8 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
                         hint: '0.00',
                         colors: colors,
                         keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
+                          decimal: true,
+                        ),
                       ),
                       const SizedBox(height: 16),
 
@@ -324,8 +323,11 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.error_outline_rounded,
-                                size: 15, color: colors.errorSub),
+                            Icon(
+                              Icons.error_outline_rounded,
+                              size: 15,
+                              color: colors.errorSub,
+                            ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
@@ -351,7 +353,11 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
         if (!_loadingDropdowns)
           Padding(
             padding: EdgeInsets.fromLTRB(
-                20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 24),
+              20,
+              12,
+              20,
+              MediaQuery.of(context).viewInsets.bottom + 24,
+            ),
             child: SizedBox(
               width: double.infinity,
               height: 54,
@@ -375,13 +381,20 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
                           strokeWidth: 2.5,
                         ),
                       )
-                    : const Text(
-                        'Yuborish',
-                        style: TextStyle(
-                          fontFamily: 'Manrope',
-                          fontWeight: FontWeight.w900,
-                          fontSize: 16,
-                        ),
+                    : const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check),
+                          SizedBox(width: 8),
+                          Text(
+                            'Yuborish',
+                            style: TextStyle(
+                              fontFamily: 'Manrope',
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       ),
               ),
             ),
@@ -391,14 +404,14 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
   }
 
   Widget _label(String text, AppColors colors) => Text(
-        text,
-        style: TextStyle(
-          fontFamily: 'Manrope',
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: colors.textSub,
-        ),
-      );
+    text,
+    style: TextStyle(
+      fontFamily: 'Manrope',
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      color: colors.textSub,
+    ),
+  );
 
   Widget _textField({
     required TextEditingController controller,
@@ -433,8 +446,10 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
         ),
         filled: true,
         fillColor: colors.backgroundElevation1,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
       ),
     );
   }
@@ -519,7 +534,8 @@ class _FloatingDropdownState extends State<_FloatingDropdown> {
           color: colors.backgroundElevation1,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: _isOpen ? colors.accentSub : colors.strokeSub),
+            color: _isOpen ? colors.accentSub : colors.strokeSub,
+          ),
         ),
         child: Row(
           children: [
@@ -545,8 +561,11 @@ class _FloatingDropdownState extends State<_FloatingDropdown> {
                 },
                 child: Padding(
                   padding: const EdgeInsets.only(left: 8),
-                  child:
-                      Icon(Icons.close_rounded, color: colors.iconSub, size: 20),
+                  child: Icon(
+                    Icons.close_rounded,
+                    color: colors.iconSub,
+                    size: 20,
+                  ),
                 ),
               )
             else
@@ -640,7 +659,9 @@ class _DropdownOverlay extends StatelessWidget {
                             child: Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 14),
+                                horizontal: 14,
+                                vertical: 14,
+                              ),
                               color: selected
                                   ? colors.accentDisabled
                                   : Colors.transparent,
@@ -745,7 +766,8 @@ class _PaymentDropdownState extends State<_PaymentDropdown> {
           color: colors.backgroundElevation1,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: _isOpen ? colors.accentSub : colors.strokeSub),
+            color: _isOpen ? colors.accentSub : colors.strokeSub,
+          ),
         ),
         child: Row(
           children: [
@@ -771,8 +793,11 @@ class _PaymentDropdownState extends State<_PaymentDropdown> {
                 },
                 child: Padding(
                   padding: const EdgeInsets.only(left: 8),
-                  child:
-                      Icon(Icons.close_rounded, color: colors.iconSub, size: 20),
+                  child: Icon(
+                    Icons.close_rounded,
+                    color: colors.iconSub,
+                    size: 20,
+                  ),
                 ),
               )
             else
@@ -852,7 +877,9 @@ class _PaymentOverlay extends StatelessWidget {
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 14),
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
                         color: isSelected
                             ? colors.accentDisabled
                             : Colors.transparent,
@@ -861,8 +888,9 @@ class _PaymentOverlay extends StatelessWidget {
                           style: TextStyle(
                             fontFamily: 'Manrope',
                             fontSize: 14,
-                            fontWeight:
-                                isSelected ? FontWeight.w700 : FontWeight.w500,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
                             color: colors.textStrong,
                           ),
                         ),
