@@ -3,26 +3,17 @@ import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-Future<bool> showExpenseRequestForm(BuildContext context) async {
-  final result = await showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => const _ExpenseRequestSheet(),
-  );
-  return result == true;
-}
-
-class _ExpenseRequestSheet extends StatefulWidget {
-  const _ExpenseRequestSheet();
+class ExpenseRequestFormScreen extends StatefulWidget {
+  const ExpenseRequestFormScreen({super.key});
 
   @override
-  State<_ExpenseRequestSheet> createState() => _ExpenseRequestSheetState();
+  State<ExpenseRequestFormScreen> createState() =>
+      _ExpenseRequestFormScreenState();
 }
 
-class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
+class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
   final _api = ApiService();
   final _auth = AuthService();
   final _amountCtrl = TextEditingController();
@@ -93,8 +84,7 @@ class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
         reason.isEmpty ||
         _selectedPayment == null) {
       setState(
-        () => _submitError = "Iltimos barcha majburiy maydonlarni to'ldiring",
-      );
+          () => _submitError = "Iltimos barcha majburiy maydonlarni to'ldiring");
       return;
     }
     if (_isCard && _cardCtrl.text.trim().isEmpty) {
@@ -111,7 +101,7 @@ class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
       final token = await _auth.getToken();
       if (token == null) throw Exception('Token topilmadi');
 
-      final body = <String, dynamic>{
+      await _api.createExpenseRequest(token, {
         'type': 'withdrawal',
         'project': _selectedProject!['id'],
         'expense_category': _selectedCategory!['id'],
@@ -119,9 +109,7 @@ class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
         'reason': reason,
         'payment_method': _selectedPayment!.value,
         if (_isCard) 'card_number': _cardCtrl.text.trim(),
-      };
-
-      await _api.createExpenseRequest(token, body);
+      });
 
       if (mounted) {
         setState(() {
@@ -129,7 +117,7 @@ class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
           _success = true;
         });
         await Future.delayed(const Duration(milliseconds: 1800));
-        if (mounted) Navigator.of(context).pop(true);
+        if (mounted) context.pop(true);
       }
     } catch (e, stack) {
       debugPrint('=== EXPENSE FORM SUBMIT ERROR: $e ===');
@@ -147,13 +135,11 @@ class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.95,
-      decoration: BoxDecoration(
-        color: colors.backgroundBase,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+    return Scaffold(
+      backgroundColor: colors.backgroundBase,
+      body: SafeArea(
+        child: _success ? _buildSuccess(colors) : _buildForm(colors),
       ),
-      child: _success ? _buildSuccess(colors) : _buildForm(colors),
     );
   }
 
@@ -202,7 +188,7 @@ class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
   Widget _buildForm(AppColors colors) {
     return Column(
       children: [
-        // ── Header ────────────────────────────────────────────────────────────
+        // ── Header ──────────────────────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
           child: Row(
@@ -219,7 +205,7 @@ class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
                 ),
               ),
               IconButton(
-                onPressed: () => Navigator.of(context).pop(false),
+                onPressed: () => context.pop(false),
                 icon: Container(
                   width: 36,
                   height: 36,
@@ -227,18 +213,18 @@ class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
                     color: colors.backgroundElevation2,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    Icons.close_rounded,
-                    size: 20,
-                    color: colors.iconSub,
-                  ),
+                  child: Icon(Icons.close_rounded,
+                      size: 20, color: colors.iconSub),
                 ),
                 padding: EdgeInsets.zero,
               ),
             ],
           ),
         ),
-        // ── Scrollable fields ─────────────────────────────────────────────────
+
+        Divider(height: 1, color: colors.strokeSub),
+
+        // ── Scrollable fields ────────────────────────────────────────────────
         Expanded(
           child: _loadingDropdowns
               ? Center(
@@ -251,7 +237,7 @@ class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
                     children: [
                       _label('Loyiha *', colors),
                       const SizedBox(height: 6),
-                      FloatingDropdown(
+                      _FloatingDropdown(
                         placeholder: 'Loyihani tanlang',
                         value: _selectedProject?['title'] as String?,
                         items: _projects,
@@ -259,13 +245,14 @@ class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
                         colors: colors,
                         onSelect: (item) =>
                             setState(() => _selectedProject = item),
-                        onClear: () => setState(() => _selectedProject = null),
+                        onClear: () =>
+                            setState(() => _selectedProject = null),
                       ),
                       const SizedBox(height: 16),
 
                       _label('Xarajat turi *', colors),
                       const SizedBox(height: 6),
-                      FloatingDropdown(
+                      _FloatingDropdown(
                         placeholder: 'Xarajat turini tanlang',
                         value: _selectedCategory?['title'] as String?,
                         items: _categories,
@@ -273,13 +260,14 @@ class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
                         colors: colors,
                         onSelect: (item) =>
                             setState(() => _selectedCategory = item),
-                        onClear: () => setState(() => _selectedCategory = null),
+                        onClear: () =>
+                            setState(() => _selectedCategory = null),
                       ),
                       const SizedBox(height: 16),
 
                       _label("To'lov usuli *", colors),
                       const SizedBox(height: 6),
-                      FloatingPaymentDropdown(
+                      _PaymentDropdown(
                         placeholder: "To'lov usulini tanlang",
                         options: _paymentOptions,
                         selected: _selectedPayment,
@@ -318,8 +306,7 @@ class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
                         hint: '0.00',
                         colors: colors,
                         keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
+                            decimal: true),
                       ),
                       const SizedBox(height: 16),
 
@@ -337,11 +324,8 @@ class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.error_outline_rounded,
-                              size: 15,
-                              color: colors.errorSub,
-                            ),
+                            Icon(Icons.error_outline_rounded,
+                                size: 15, color: colors.errorSub),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
@@ -363,15 +347,11 @@ class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
                 ),
         ),
 
-        // ── Submit button ─────────────────────────────────────────────────────
+        // ── Submit button ────────────────────────────────────────────────────
         if (!_loadingDropdowns)
           Padding(
             padding: EdgeInsets.fromLTRB(
-              20,
-              12,
-              20,
-              MediaQuery.of(context).viewInsets.bottom + 24,
-            ),
+                20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 24),
             child: SizedBox(
               width: double.infinity,
               height: 54,
@@ -411,14 +391,14 @@ class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
   }
 
   Widget _label(String text, AppColors colors) => Text(
-    text,
-    style: TextStyle(
-      fontFamily: 'Manrope',
-      fontSize: 13,
-      fontWeight: FontWeight.w600,
-      color: colors.textSub,
-    ),
-  );
+        text,
+        style: TextStyle(
+          fontFamily: 'Manrope',
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: colors.textSub,
+        ),
+      );
 
   Widget _textField({
     required TextEditingController controller,
@@ -453,10 +433,8 @@ class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
         ),
         filled: true,
         fillColor: colors.backgroundElevation1,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 14,
-        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       ),
     );
   }
@@ -464,7 +442,7 @@ class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
 
 // ── Floating Dropdown ─────────────────────────────────────────────────────────
 
-class FloatingDropdown extends StatefulWidget {
+class _FloatingDropdown extends StatefulWidget {
   final String placeholder;
   final String? value;
   final List<Map<String, dynamic>> items;
@@ -473,8 +451,7 @@ class FloatingDropdown extends StatefulWidget {
   final VoidCallback? onClear;
   final AppColors colors;
 
-  const FloatingDropdown({
-    super.key,
+  const _FloatingDropdown({
     required this.placeholder,
     required this.value,
     required this.items,
@@ -485,10 +462,10 @@ class FloatingDropdown extends StatefulWidget {
   });
 
   @override
-  State<FloatingDropdown> createState() => _FloatingDropdownState();
+  State<_FloatingDropdown> createState() => _FloatingDropdownState();
 }
 
-class _FloatingDropdownState extends State<FloatingDropdown> {
+class _FloatingDropdownState extends State<_FloatingDropdown> {
   final _key = GlobalKey();
   OverlayEntry? _entry;
   bool _isOpen = false;
@@ -542,8 +519,7 @@ class _FloatingDropdownState extends State<FloatingDropdown> {
           color: colors.backgroundElevation1,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: _isOpen ? colors.accentSub : colors.strokeSub,
-          ),
+              color: _isOpen ? colors.accentSub : colors.strokeSub),
         ),
         child: Row(
           children: [
@@ -569,11 +545,8 @@ class _FloatingDropdownState extends State<FloatingDropdown> {
                 },
                 child: Padding(
                   padding: const EdgeInsets.only(left: 8),
-                  child: Icon(
-                    Icons.close_rounded,
-                    color: colors.iconSub,
-                    size: 20,
-                  ),
+                  child:
+                      Icon(Icons.close_rounded, color: colors.iconSub, size: 20),
                 ),
               )
             else
@@ -667,9 +640,7 @@ class _DropdownOverlay extends StatelessWidget {
                             child: Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 14,
-                              ),
+                                  horizontal: 14, vertical: 14),
                               color: selected
                                   ? colors.accentDisabled
                                   : Colors.transparent,
@@ -699,7 +670,7 @@ class _DropdownOverlay extends StatelessWidget {
 
 // ── Payment Dropdown ──────────────────────────────────────────────────────────
 
-class FloatingPaymentDropdown extends StatefulWidget {
+class _PaymentDropdown extends StatefulWidget {
   final String placeholder;
   final List<_Option> options;
   final _Option? selected;
@@ -707,8 +678,7 @@ class FloatingPaymentDropdown extends StatefulWidget {
   final VoidCallback? onClear;
   final AppColors colors;
 
-  const FloatingPaymentDropdown({
-    super.key,
+  const _PaymentDropdown({
     required this.placeholder,
     required this.options,
     required this.selected,
@@ -718,11 +688,10 @@ class FloatingPaymentDropdown extends StatefulWidget {
   });
 
   @override
-  State<FloatingPaymentDropdown> createState() =>
-      _FloatingPaymentDropdownState();
+  State<_PaymentDropdown> createState() => _PaymentDropdownState();
 }
 
-class _FloatingPaymentDropdownState extends State<FloatingPaymentDropdown> {
+class _PaymentDropdownState extends State<_PaymentDropdown> {
   final _key = GlobalKey();
   OverlayEntry? _entry;
   bool _isOpen = false;
@@ -776,8 +745,7 @@ class _FloatingPaymentDropdownState extends State<FloatingPaymentDropdown> {
           color: colors.backgroundElevation1,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: _isOpen ? colors.accentSub : colors.strokeSub,
-          ),
+              color: _isOpen ? colors.accentSub : colors.strokeSub),
         ),
         child: Row(
           children: [
@@ -803,11 +771,8 @@ class _FloatingPaymentDropdownState extends State<FloatingPaymentDropdown> {
                 },
                 child: Padding(
                   padding: const EdgeInsets.only(left: 8),
-                  child: Icon(
-                    Icons.close_rounded,
-                    color: colors.iconSub,
-                    size: 20,
-                  ),
+                  child:
+                      Icon(Icons.close_rounded, color: colors.iconSub, size: 20),
                 ),
               )
             else
@@ -887,9 +852,7 @@ class _PaymentOverlay extends StatelessWidget {
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 14,
-                        ),
+                            horizontal: 14, vertical: 14),
                         color: isSelected
                             ? colors.accentDisabled
                             : Colors.transparent,
@@ -898,9 +861,8 @@ class _PaymentOverlay extends StatelessWidget {
                           style: TextStyle(
                             fontFamily: 'Manrope',
                             fontSize: 14,
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
+                            fontWeight:
+                                isSelected ? FontWeight.w700 : FontWeight.w500,
                             color: colors.textStrong,
                           ),
                         ),

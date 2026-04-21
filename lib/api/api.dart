@@ -33,9 +33,23 @@ class ApiService {
   dynamic _unwrap(Map<String, dynamic> body) {
     final success = body['success'] as bool? ?? false;
     if (!success) {
+      debugPrint('=== API _unwrap: success=false, full body: $body ===');
       final error = body['error'] as Map<String, dynamic>?;
-      final msg = error?['errorMsg'] as String? ?? "Noma'lum xatolik yuz berdi";
       final code = (error?['errorId'] as num?)?.toInt() ?? 0;
+
+      final details = error?['details'] as Map<String, dynamic>?;
+      final String msg;
+      if (details != null && details.isNotEmpty) {
+        msg = details.entries.map((e) {
+          final msgs = e.value is List
+              ? (e.value as List).map((v) => v.toString()).join(', ')
+              : e.value.toString();
+          return msgs;
+        }).join('\n');
+      } else {
+        msg = error?['errorMsg'] as String? ?? "Noma'lum xatolik yuz berdi";
+      }
+
       throw ApiException(msg, code);
     }
     return body['data'];
@@ -160,10 +174,25 @@ class ApiService {
 
   Future<void> createExpenseRequest(
       String token, Map<String, dynamic> data) async {
-    final response = await _dio.post('expense-request/',
-        data: data, options: _auth(token));
-    final body = response.data as Map<String, dynamic>;
-    _unwrap(body);
+    debugPrint('=== CREATE EXPENSE REQUEST ===');
+    debugPrint('Body: $data');
+    try {
+      final response = await _dio.post(
+        'expense-request/',
+        data: data,
+        options: _auth(token),
+      );
+      debugPrint('Status: ${response.statusCode}');
+      debugPrint('Response: ${response.data}');
+      final body = response.data as Map<String, dynamic>;
+      _unwrap(body);
+    } on DioException catch (e) {
+      debugPrint('DioException: ${e.type}');
+      debugPrint('Status: ${e.response?.statusCode}');
+      debugPrint('Response data: ${e.response?.data}');
+      debugPrint('Message: ${e.message}');
+      rethrow;
+    }
   }
 
   // ── Legacy ────────────────────────────────────────────────────────────────

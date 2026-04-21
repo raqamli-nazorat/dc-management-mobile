@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:dcmanagement/api/api.dart';
 import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/services/auth_service.dart';
+import 'package:dcmanagement/widgets/app_state_widgets.dart';
+import 'package:dcmanagement/widgets/info_row.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -204,121 +206,11 @@ class _SalaryScreenState extends State<SalaryScreen> {
     }
 
     if (_throttleSeconds != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: colors.errorSoft,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Icon(Icons.access_time_rounded,
-                    color: colors.errorSub, size: 36),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                "Juda ko'p so'rov yuborildi",
-                style: TextStyle(
-                  fontFamily: 'Manrope',
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
-                  color: colors.textStrong,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Iltimos qayta urinib ko'ring",
-                style: TextStyle(
-                  fontFamily: 'Manrope',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: colors.textSub,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 14),
-                decoration: BoxDecoration(
-                  color: colors.backgroundElevation2,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: colors.strokeSub),
-                ),
-                child: RichText(
-                  text: TextSpan(children: [
-                    TextSpan(
-                      text: '$_throttleSeconds',
-                      style: TextStyle(
-                        fontFamily: 'Manrope',
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                        color: colors.errorSub,
-                      ),
-                    ),
-                    TextSpan(
-                      text: ' soniya',
-                      style: TextStyle(
-                        fontFamily: 'Manrope',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: colors.textSub,
-                      ),
-                    ),
-                  ]),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      return ThrottleCountdown(seconds: _throttleSeconds!, colors: colors);
     }
 
     if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline_rounded,
-                  color: colors.errorSub, size: 48),
-              const SizedBox(height: 12),
-              Text(
-                _error!,
-                style: TextStyle(
-                  fontFamily: 'Manrope',
-                  fontWeight: FontWeight.w500,
-                  color: colors.textSub,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _load,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colors.accentSub,
-                  foregroundColor: colors.textWhite,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'Qayta urinish',
-                  style: TextStyle(
-                      fontFamily: 'Manrope', fontWeight: FontWeight.w900),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      return ErrorRetry(message: _error!, onRetry: _load, colors: colors);
     }
 
     if (_filtered.isEmpty) {
@@ -454,13 +346,13 @@ class _PayrollCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _InfoRow(
+                    InfoRow(
                       colors: colors,
                       label: 'Ism sharifi:  ',
                       value: username,
                     ),
                     const SizedBox(height: 2),
-                    _InfoRow(
+                    InfoRow(
                       colors: colors,
                       label: 'Oy:  ',
                       value: monthDisplay,
@@ -474,7 +366,7 @@ class _PayrollCard extends StatelessWidget {
           const SizedBox(height: 10),
 
           // KPI bonus
-          _InfoRow(
+          InfoRow(
             colors: colors,
             label: 'KPI bonus:  ',
             value: _fmt(item['kpi_bonus']),
@@ -485,7 +377,7 @@ class _PayrollCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _InfoRow(
+                child: InfoRow(
                   colors: colors,
                   label: 'Jami miqdori:  ',
                   value: _fmt(item['total_amount']),
@@ -517,42 +409,3 @@ class _PayrollCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────
-
-class _InfoRow extends StatelessWidget {
-  final AppColors colors;
-  final String label;
-  final String value;
-
-  const _InfoRow({
-    required this.colors,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) => RichText(
-        text: TextSpan(
-          children: [
-            TextSpan(
-              text: label,
-              style: TextStyle(
-                fontFamily: 'Manrope',
-                fontWeight: FontWeight.w500,
-                fontSize: 13,
-                color: colors.textSub,
-              ),
-            ),
-            TextSpan(
-              text: value,
-              style: TextStyle(
-                fontFamily: 'Manrope',
-                fontWeight: FontWeight.w900,
-                fontSize: 13,
-                color: colors.textStrong,
-              ),
-            ),
-          ],
-        ),
-      );
-}

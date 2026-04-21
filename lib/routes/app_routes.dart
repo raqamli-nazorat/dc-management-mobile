@@ -1,3 +1,5 @@
+import 'package:dcmanagement/app_config.dart';
+import 'package:dcmanagement/screens/expense_request_form_screen.dart';
 import 'package:dcmanagement/screens/expense_requests_screen.dart';
 import 'package:dcmanagement/screens/finance_history_screen.dart';
 import 'package:dcmanagement/screens/finance_screen.dart';
@@ -30,6 +32,7 @@ final appRouter = GoRouter(
     final onPin = location == '/pin';
 
     if (!loggedIn) return onLogin ? null : '/login';
+    if (!kProduction) return onLogin ? '/home' : null;
     if (onLogin) return PinSession.instance.verified ? '/home' : '/pin';
     if (!onPin && !PinSession.instance.verified) return '/pin';
     return null;
@@ -47,6 +50,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/finance/expense-requests',
       builder: (_, __) => const ExpenseRequestsScreen(),
+    ),
+    GoRoute(
+      path: '/finance/expense-request-form',
+      builder: (_, __) => const ExpenseRequestFormScreen(),
     ),
     GoRoute(path: '/finance/salary', builder: (_, __) => const SalaryScreen()),
     GoRoute(

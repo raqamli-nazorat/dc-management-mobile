@@ -31,7 +31,7 @@ class FinanceScreen extends StatelessWidget {
                 Expanded(
                   child: FinanceCard(
                     title: 'Ish haqi',
-                    onTap: () => context.push('salary'),
+                    onTap: () => context.push('/finance/salary'),
                     imagePath: 'assets/images/briefcase.png',
                   ),
                 ),
@@ -39,7 +39,7 @@ class FinanceScreen extends StatelessWidget {
                 // Bazi narsalar custom
                 Expanded(
                   child: FinanceCard(
-                    onTap: () => context.push('history'),
+                    onTap: () => context.push('/finance/history'),
                     title: 'Tarix',
                     imagePath: 'assets/images/mobile.png',
                     backgroundColor: colors.accentDisabled,

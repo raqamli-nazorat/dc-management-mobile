@@ -64,7 +64,7 @@ class RoleSelectScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "O’zingiz uchun rolni tanlang",
+                    "O'zingiz uchun rolni tanlang",
                     style: TextStyle(
                       color: colors.textStrong,
                       fontSize: 28,
@@ -74,7 +74,7 @@ class RoleSelectScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Tizim funksiyalariga kirish siz tanlagan rolga bog’liq",
+                    "Tizim funksiyalariga kirish siz tanlagan rolga bog'liq",
                     style: TextStyle(
                       color: colors.textSub,
                       fontSize: 14,
@@ -93,11 +93,11 @@ class RoleSelectScreen extends StatelessWidget {
                         return GestureDetector(
                           onTap: () async {
                             await StorageService().saveString(
-                              ‘selected_role’,
+                              'selected_role',
                               role,
                             );
                             if (!context.mounted) return;
-                            context.go(‘/home’);
+                            context.go('/home');
                           },
                           child: Container(
                             height: 68,

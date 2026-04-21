@@ -5,8 +5,10 @@ import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/models/expense_filter.dart';
 import 'package:dcmanagement/screens/expense_detail_screen.dart';
 import 'package:dcmanagement/screens/expense_filter_screen.dart';
-import 'package:dcmanagement/screens/expense_request_form_sheet.dart';
+import 'package:go_router/go_router.dart';
 import 'package:dcmanagement/services/auth_service.dart';
+import 'package:dcmanagement/widgets/app_state_widgets.dart';
+import 'package:dcmanagement/widgets/info_row.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -137,11 +139,15 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
         final dt = raw != null ? DateTime.tryParse(raw) : null;
         if (dt == null) return false;
         if (_filter.createdAtFrom != null &&
-            dt.isBefore(_filter.createdAtFrom!.copyWith(hour: 0, minute: 0, second: 0))) {
+            dt.isBefore(
+              _filter.createdAtFrom!.copyWith(hour: 0, minute: 0, second: 0),
+            )) {
           return false;
         }
         if (_filter.createdAtTo != null &&
-            dt.isAfter(_filter.createdAtTo!.copyWith(hour: 23, minute: 59, second: 59))) {
+            dt.isAfter(
+              _filter.createdAtTo!.copyWith(hour: 23, minute: 59, second: 59),
+            )) {
           return false;
         }
       }
@@ -150,11 +156,15 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
         final dt = raw != null ? DateTime.tryParse(raw) : null;
         if (dt == null) return false;
         if (_filter.paidAtFrom != null &&
-            dt.isBefore(_filter.paidAtFrom!.copyWith(hour: 0, minute: 0, second: 0))) {
+            dt.isBefore(
+              _filter.paidAtFrom!.copyWith(hour: 0, minute: 0, second: 0),
+            )) {
           return false;
         }
         if (_filter.paidAtTo != null &&
-            dt.isAfter(_filter.paidAtTo!.copyWith(hour: 23, minute: 59, second: 59))) {
+            dt.isAfter(
+              _filter.paidAtTo!.copyWith(hour: 23, minute: 59, second: 59),
+            )) {
           return false;
         }
       }
@@ -163,11 +173,15 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
         final dt = raw != null ? DateTime.tryParse(raw) : null;
         if (dt == null) return false;
         if (_filter.confirmedAtFrom != null &&
-            dt.isBefore(_filter.confirmedAtFrom!.copyWith(hour: 0, minute: 0, second: 0))) {
+            dt.isBefore(
+              _filter.confirmedAtFrom!.copyWith(hour: 0, minute: 0, second: 0),
+            )) {
           return false;
         }
         if (_filter.confirmedAtTo != null &&
-            dt.isAfter(_filter.confirmedAtTo!.copyWith(hour: 23, minute: 59, second: 59))) {
+            dt.isAfter(
+              _filter.confirmedAtTo!.copyWith(hour: 23, minute: 59, second: 59),
+            )) {
           return false;
         }
       }
@@ -209,9 +223,9 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
     final colors = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: colors.backgroundBase,
+      backgroundColor: colors.backgroundElevation1Alt,
       appBar: AppBar(
-        backgroundColor: colors.backgroundBase,
+        backgroundColor: colors.backgroundElevation1Alt,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_rounded, color: colors.textStrong),
@@ -221,8 +235,12 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
           Container(
             margin: const EdgeInsets.only(right: 16),
             child: ElevatedButton.icon(
-              onPressed: () =>
-                  showExpenseRequestForm(context).then((_) => _load()),
+              onPressed: () async {
+                final result = await context.push<bool>(
+                  '/finance/expense-request-form',
+                );
+                if (result == true && mounted) _load();
+              },
               iconAlignment: IconAlignment.end,
               label: const Text(
                 "So'rov yuborish",
@@ -351,7 +369,6 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
                             ),
                           ],
                         ),
-                      
                       ],
                     ),
             ),
@@ -367,126 +384,10 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
       return Center(child: CircularProgressIndicator(color: colors.accentSub));
     }
     if (_throttleSeconds != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: colors.errorSoft,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Icon(
-                  Icons.access_time_rounded,
-                  color: colors.errorSub,
-                  size: 36,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Juda ko\'p so\'rov yuborildi',
-                style: TextStyle(
-                  fontFamily: 'Manrope',
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
-                  color: colors.textStrong,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Iltimos qayta urinib ko\'ring',
-                style: TextStyle(
-                  fontFamily: 'Manrope',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: colors.textSub,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: colors.backgroundElevation2,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: colors.strokeSub),
-                ),
-                child: RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '$_throttleSeconds',
-                        style: TextStyle(
-                          fontFamily: 'Manrope',
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
-                          color: colors.errorSub,
-                        ),
-                      ),
-                      TextSpan(
-                        text: ' soniya',
-                        style: TextStyle(
-                          fontFamily: 'Manrope',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: colors.textSub,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      return ThrottleCountdown(seconds: _throttleSeconds!, colors: colors);
     }
     if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline_rounded, color: colors.errorSub, size: 48),
-            const SizedBox(height: 12),
-            Text(
-              _error!,
-              style: TextStyle(
-                fontFamily: 'Manrope',
-                fontWeight: FontWeight.w500,
-                color: colors.textSub,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _load,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.accentSub,
-                foregroundColor: colors.textWhite,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Qayta urinish',
-                style: TextStyle(
-                  fontFamily: 'Manrope',
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
+      return ErrorRetry(message: _error!, onRetry: _load, colors: colors);
     }
     if (_filtered.isEmpty) {
       return Center(
@@ -610,14 +511,14 @@ class _ExpenseCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _InfoRow(
+                    InfoRow(
                       colors: colors,
                       label: 'Ism sharifi:  ',
                       value: username,
                       valueBold: true,
                     ),
                     const SizedBox(height: 2),
-                    _InfoRow(
+                    InfoRow(
                       colors: colors,
                       label: 'Loyiha: ',
                       value: projectTitle,
@@ -632,7 +533,7 @@ class _ExpenseCard extends StatelessWidget {
           const SizedBox(height: 10),
 
           // Bottom rows: full width
-          _InfoRow(
+          InfoRow(
             colors: colors,
             label: 'Xarajat turi:  ',
             value: categoryTitle,
@@ -642,7 +543,7 @@ class _ExpenseCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _InfoRow(
+                child: InfoRow(
                   colors: colors,
                   label: 'Summasi:  ',
                   value: amount,
@@ -671,48 +572,6 @@ class _ExpenseCard extends StatelessWidget {
                     : null,
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final AppColors colors;
-  final String label;
-  final String value;
-  final bool valueBold;
-
-  const _InfoRow({
-    required this.colors,
-    required this.label,
-    required this.value,
-    required this.valueBold,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return RichText(
-      text: TextSpan(
-        children: [
-          TextSpan(
-            text: label,
-            style: TextStyle(
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w500,
-              fontSize: 13,
-              color: colors.textSub,
-            ),
-          ),
-          TextSpan(
-            text: value,
-            style: TextStyle(
-              fontFamily: 'Manrope',
-              fontWeight: valueBold ? FontWeight.w900 : FontWeight.w500,
-              fontSize: 13,
-              color: colors.textStrong,
-            ),
           ),
         ],
       ),
