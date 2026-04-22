@@ -11,8 +11,9 @@ class FinanceScreen extends StatelessWidget {
     final colors = AppColors.of(context);
 
     return Scaffold(
+      backgroundColor: colors.backgroundBase,
       body: Padding(
-        padding: EdgeInsetsGeometry.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             // Minimal — faqat majburiy proplar
@@ -42,7 +43,6 @@ class FinanceScreen extends StatelessWidget {
                     onTap: () => context.push('/finance/history'),
                     title: 'Tarix',
                     imagePath: 'assets/images/mobile.png',
-                    backgroundColor: colors.accentDisabled,
                   ),
                 ),
               ],

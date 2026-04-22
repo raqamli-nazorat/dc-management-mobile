@@ -161,12 +161,12 @@ class UserCard extends StatelessWidget {
                   width: 30,
                   height: 30,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF22C55E),
+                    color: colors.successStrong.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.check,
-                    color: Colors.white,
+                    color: colors.successStrong,
                     size: 18,
                   ),
                 ),

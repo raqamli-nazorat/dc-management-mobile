@@ -238,7 +238,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                     onPressed: _apply,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colors.accentSub,
-                      foregroundColor: Colors.white,
+                      foregroundColor: colors.textWhite,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),

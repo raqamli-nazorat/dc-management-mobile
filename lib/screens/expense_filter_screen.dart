@@ -132,128 +132,79 @@ class _ExpenseFilterScreenState extends State<ExpenseFilterScreen> {
                 children: [
                   // ── Loyiha ──────────────────────────────────────────────
                   _Label(label: 'Loyiha', colors: colors),
-                  _DropdownTile(
+                  _FloatingDropdown(
                     colors: colors,
                     placeholder: 'Loyiha tanlang',
                     value: _filter.projectTitle,
-                    isOpen: _open == 'project',
-                    onTap: () => _toggle('project'),
+                    items: _projects,
+                    selectedId: _filter.projectId,
+                    onSelect: (item) => setState(() {
+                      _filter = _filter.copyWith(
+                        projectId: item['id'] as int,
+                        projectTitle: item['title'] as String,
+                      );
+                    }),
                     onClear: _filter.projectId != null
                         ? () => setState(() {
                               _filter = _filter.copyWith(
                                 projectId: null,
                                 projectTitle: null,
                               );
-                              _open = null;
                             })
                         : null,
                   ),
-                  if (_open == 'project')
-                    _OptionsList(
-                      colors: colors,
-                      items: _projects.map((p) {
-                        String? dateStr;
-                        final ca = p['created_at'] as String?;
-                        if (ca != null) {
-                          try {
-                            dateStr = DateFormat('dd.MM.yyyy')
-                                .format(DateTime.parse(ca));
-                          } catch (_) {}
-                        }
-                        return _OptionItem(
-                          id: p['id'] as int,
-                          title: p['title'] as String? ?? '',
-                          subtitle: p['description'] as String?,
-                          trailing: dateStr,
-                          selected: _filter.projectId == p['id'],
-                        );
-                      }).toList(),
-                      onSelect: (item) => setState(() {
-                        _filter = _filter.copyWith(
-                          projectId: item.id,
-                          projectTitle: item.title,
-                        );
-                        _open = null;
-                      }),
-                    ),
 
                   const SizedBox(height: 14),
 
                   // ── Xarajat turi ─────────────────────────────────────────
                   _Label(label: 'Xarajat turi', colors: colors),
-                  _DropdownTile(
+                  _FloatingDropdown(
                     colors: colors,
                     placeholder: 'Xarajat turini tanlang',
                     value: _filter.categoryTitle,
-                    isOpen: _open == 'category',
-                    onTap: () => _toggle('category'),
+                    items: _categories,
+                    selectedId: _filter.categoryId,
+                    onSelect: (item) => setState(() {
+                      _filter = _filter.copyWith(
+                        categoryId: item['id'] as int,
+                        categoryTitle: item['title'] as String,
+                      );
+                    }),
                     onClear: _filter.categoryId != null
                         ? () => setState(() {
                               _filter = _filter.copyWith(
                                 categoryId: null,
                                 categoryTitle: null,
                               );
-                              _open = null;
                             })
                         : null,
                   ),
-                  if (_open == 'category')
-                    _OptionsList(
-                      colors: colors,
-                      items: _categories
-                          .map((c) => _OptionItem(
-                                id: c['id'] as int,
-                                title: c['title'] as String? ?? '',
-                                selected: _filter.categoryId == c['id'],
-                              ))
-                          .toList(),
-                      onSelect: (item) => setState(() {
-                        _filter = _filter.copyWith(
-                          categoryId: item.id,
-                          categoryTitle: item.title,
-                        );
-                        _open = null;
-                      }),
-                    ),
 
                   const SizedBox(height: 14),
 
                   // ── Toifa ────────────────────────────────────────────────
                   _Label(label: 'Toifa', colors: colors),
-                  _DropdownTile(
+                  _FloatingDropdown(
                     colors: colors,
                     placeholder: 'Toifani tanlang',
                     value: _filter.toifaTitle,
-                    isOpen: _open == 'toifa',
-                    onTap: () => _toggle('toifa'),
+                    items: _categories,
+                    selectedId: _filter.toifaId,
+                    onSelect: (item) => setState(() {
+                      _filter = _filter.copyWith(
+                        toifaId: item['id'] as int,
+                        toifaTitle: item['title'] as String,
+                      );
+                    }),
                     onClear: _filter.toifaId != null
                         ? () => setState(() {
                               _filter = _filter.copyWith(
                                 toifaId: null,
                                 toifaTitle: null,
                               );
-                              _open = null;
                             })
                         : null,
                   ),
-                  if (_open == 'toifa')
-                    _OptionsList(
-                      colors: colors,
-                      items: _categories
-                          .map((c) => _OptionItem(
-                                id: c['id'] as int,
-                                title: c['title'] as String? ?? '',
-                                selected: _filter.toifaId == c['id'],
-                              ))
-                          .toList(),
-                      onSelect: (item) => setState(() {
-                        _filter = _filter.copyWith(
-                          toifaId: item.id,
-                          toifaTitle: item.title,
-                        );
-                        _open = null;
-                      }),
-                    ),
 
                   const SizedBox(height: 14),
 
@@ -503,190 +454,236 @@ class _Label extends StatelessWidget {
       );
 }
 
-class _DropdownTile extends StatelessWidget {
-  final AppColors colors;
+class _FloatingDropdown extends StatefulWidget {
   final String placeholder;
   final String? value;
-  final bool isOpen;
-  final VoidCallback onTap;
+  final List<Map<String, dynamic>> items;
+  final int? selectedId;
+  final ValueChanged<Map<String, dynamic>> onSelect;
   final VoidCallback? onClear;
+  final AppColors colors;
 
-  const _DropdownTile({
-    required this.colors,
+  const _FloatingDropdown({
     required this.placeholder,
     required this.value,
-    required this.isOpen,
-    required this.onTap,
+    required this.items,
+    required this.selectedId,
+    required this.onSelect,
+    required this.colors,
     this.onClear,
   });
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
-          decoration: BoxDecoration(
-            color: const Color(0xFF111111),
-            borderRadius: isOpen
-                ? const BorderRadius.vertical(top: Radius.circular(12))
-                : BorderRadius.circular(12),
-            border: Border.all(
-              color: isOpen ? colors.accentSub : const Color(0xFF292A2A),
-            ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  value ?? placeholder,
-                  style: TextStyle(
-                    fontFamily: 'Manrope',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: value != null ? colors.textStrong : colors.textSoft,
-                  ),
-                ),
-              ),
-              if (value != null && onClear != null)
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: onClear,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: Icon(
-                      Icons.close_rounded,
-                      color: colors.iconSub,
-                      size: 20,
-                    ),
-                  ),
-                )
-              else
-                Icon(
-                  isOpen
-                      ? Icons.keyboard_arrow_up_rounded
-                      : Icons.keyboard_arrow_down_rounded,
-                  color: colors.iconSub,
-                  size: 20,
-                ),
-            ],
-          ),
-        ),
-      );
+  State<_FloatingDropdown> createState() => _FloatingDropdownState();
 }
 
-class _OptionItem {
-  final int id;
-  final String title;
-  final String? subtitle;
-  final String? trailing;
-  final bool selected;
+class _FloatingDropdownState extends State<_FloatingDropdown> {
+  final _key = GlobalKey();
+  OverlayEntry? _entry;
+  bool _isOpen = false;
 
-  const _OptionItem({
-    required this.id,
-    required this.title,
-    this.subtitle,
-    this.trailing,
-    required this.selected,
-  });
-}
+  void _open() {
+    final box = _key.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    final offset = box.localToGlobal(Offset.zero);
+    final size = box.size;
 
-class _OptionsList extends StatelessWidget {
-  final AppColors colors;
-  final List<_OptionItem> items;
-  final ValueChanged<_OptionItem> onSelect;
+    _entry = OverlayEntry(
+      builder: (_) => _DropdownOverlay(
+        top: offset.dy + size.height + 6,
+        left: offset.dx,
+        width: size.width,
+        items: widget.items,
+        selectedId: widget.selectedId,
+        colors: widget.colors,
+        onSelect: (item) {
+          _close();
+          widget.onSelect(item);
+        },
+        onDismiss: _close,
+      ),
+    );
+    Overlay.of(context).insert(_entry!);
+    setState(() => _isOpen = true);
+  }
 
-  const _OptionsList({
-    required this.colors,
-    required this.items,
-    required this.onSelect,
-  });
+  void _close() {
+    _entry?.remove();
+    _entry = null;
+    if (mounted) setState(() => _isOpen = false);
+  }
 
   @override
-  Widget build(BuildContext context) => Container(
+  void dispose() {
+    _entry?.remove();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = widget.colors;
+    return GestureDetector(
+      key: _key,
+      onTap: _isOpen ? _close : _open,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
         decoration: BoxDecoration(
-          color: const Color(0xFF111111),
-          borderRadius:
-              const BorderRadius.vertical(bottom: Radius.circular(12)),
-          border: Border(
-            left: BorderSide(color: colors.accentSub),
-            right: BorderSide(color: colors.accentSub),
-            bottom: BorderSide(color: colors.accentSub),
+          color: colors.backgroundElevation1,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _isOpen ? colors.accentSub : colors.strokeSub,
           ),
         ),
-        child: items.isEmpty
-            ? Padding(
-                padding: const EdgeInsets.all(14),
-                child: Text(
-                  'Mavjud emas',
-                  style: TextStyle(
-                    fontFamily: 'Manrope',
-                    fontSize: 13,
-                    color: colors.textSoft,
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                widget.value ?? widget.placeholder,
+                style: TextStyle(
+                  fontFamily: 'Manrope',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: widget.value != null
+                      ? colors.textStrong
+                      : colors.textSoft,
+                ),
+              ),
+            ),
+            if (widget.value != null && widget.onClear != null)
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  _close();
+                  widget.onClear!();
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Icon(
+                    Icons.close_rounded,
+                    color: colors.iconSub,
+                    size: 20,
                   ),
                 ),
               )
-            : Column(
-                children: items.map((item) {
-                  return InkWell(
-                    onTap: () => onSelect(item),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      color: item.selected
-                          ? colors.accentDisabled
-                          : Colors.transparent,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.title,
-                                  style: TextStyle(
-                                    fontFamily: 'Manrope',
-                                    fontSize: 14,
-                                    fontWeight: item.selected
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                    color: colors.textStrong,
-                                  ),
-                                ),
-                                if (item.subtitle != null &&
-                                    item.subtitle!.isNotEmpty)
-                                  Text(
-                                    item.subtitle!,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontFamily: 'Manrope',
-                                      fontSize: 12,
-                                      color: colors.textSoft,
-                                    ),
-                                  ),
-                              ],
-                            ),
+            else
+              Icon(
+                _isOpen
+                    ? Icons.keyboard_arrow_up_rounded
+                    : Icons.keyboard_arrow_down_rounded,
+                color: colors.iconSub,
+                size: 20,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DropdownOverlay extends StatelessWidget {
+  final double top;
+  final double left;
+  final double width;
+  final List<Map<String, dynamic>> items;
+  final int? selectedId;
+  final AppColors colors;
+  final ValueChanged<Map<String, dynamic>> onSelect;
+  final VoidCallback onDismiss;
+
+  const _DropdownOverlay({
+    required this.top,
+    required this.left,
+    required this.width,
+    required this.items,
+    required this.selectedId,
+    required this.colors,
+    required this.onSelect,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: GestureDetector(
+            onTap: onDismiss,
+            behavior: HitTestBehavior.translucent,
+            child: const SizedBox.expand(),
+          ),
+        ),
+        Positioned(
+          top: top,
+          left: left,
+          width: width,
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              constraints: const BoxConstraints(maxHeight: 240),
+              decoration: BoxDecoration(
+                color: colors.backgroundElevation1,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colors.strokeSub),
+                boxShadow: [
+                  BoxShadow(
+                    color: colors.shadow,
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: items.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Text(
+                          'Mavjud emas',
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 13,
+                            color: colors.textSoft,
                           ),
-                          if (item.trailing != null) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              item.trailing!,
-                              style: TextStyle(
-                                fontFamily: 'Manrope',
-                                fontSize: 12,
-                                color: colors.textSub,
+                        ),
+                      )
+                    : ListView(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        children: items.map((item) {
+                          final selected = item['id'] == selectedId;
+                          return InkWell(
+                            onTap: () => onSelect(item),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 14,
+                              ),
+                              color: selected
+                                  ? colors.accentDisabled
+                                  : Colors.transparent,
+                              child: Text(
+                                item['title'] as String? ?? '',
+                                style: TextStyle(
+                                  fontFamily: 'Manrope',
+                                  fontSize: 14,
+                                  fontWeight: selected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  color: colors.textStrong,
+                                ),
                               ),
                             ),
-                          ],
-                        ],
+                          );
+                        }).toList(),
                       ),
-                    ),
-                  );
-                }).toList(),
               ),
-      );
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _DateTile extends StatelessWidget {
@@ -708,12 +705,10 @@ class _DateTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
           decoration: BoxDecoration(
-            color: const Color(0xFF111111),
-            borderRadius: isOpen
-                ? const BorderRadius.vertical(top: Radius.circular(12))
-                : BorderRadius.circular(12),
+            color: colors.backgroundElevation1,
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isOpen ? colors.accentSub : const Color(0xFF292A2A),
+              color: isOpen ? colors.accentSub : colors.strokeSub,
             ),
           ),
           child: Row(
@@ -754,7 +749,7 @@ class _InlineCalendar extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF111111),
+          color: colors.backgroundElevation1,
           borderRadius:
               const BorderRadius.vertical(bottom: Radius.circular(12)),
           border: Border(
@@ -768,7 +763,7 @@ class _InlineCalendar extends StatelessWidget {
             colorScheme: Theme.of(context).colorScheme.copyWith(
                   primary: colors.accentSub,
                   onSurface: colors.textStrong,
-                  surface: const Color(0xFF111111),
+                  surface: colors.backgroundElevation1,
                 ),
           ),
           child: CalendarDatePicker(
@@ -813,14 +808,14 @@ class _AmountField extends StatelessWidget {
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           filled: true,
-          fillColor: const Color(0xFF111111),
+          fillColor: colors.backgroundElevation1,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF292A2A)),
+            borderSide: BorderSide(color: colors.strokeSub),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF292A2A)),
+            borderSide: BorderSide(color: colors.strokeSub),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),

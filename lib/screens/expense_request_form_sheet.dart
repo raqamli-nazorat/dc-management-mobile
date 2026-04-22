@@ -166,12 +166,12 @@ class _ExpenseRequestSheetState extends State<_ExpenseRequestSheet> {
             width: 72,
             height: 72,
             decoration: BoxDecoration(
-              color: const Color(0xFF34C759).withValues(alpha: 0.12),
+              color: colors.successStrong.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.check_rounded,
-              color: Color(0xFF34C759),
+              color: colors.successStrong,
               size: 38,
             ),
           ),
@@ -637,7 +637,7 @@ class _DropdownOverlay extends StatelessWidget {
                 border: Border.all(color: colors.strokeSub),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: colors.shadow.withValues(alpha: 0.08),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -870,7 +870,7 @@ class _PaymentOverlay extends StatelessWidget {
                 border: Border.all(color: colors.strokeSub),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: colors.shadow.withValues(alpha: 0.08),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),

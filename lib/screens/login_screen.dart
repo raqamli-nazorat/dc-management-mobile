@@ -161,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(
                       fontSize: 15,
                       fontFamily: "Manrope",
-                      color: colors.black,
+                      color: colors.textSub,
                       fontWeight: FontWeight.w500,
                       height: 24 / 15,
                       letterSpacing: 0,
@@ -180,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       BoxShadow(
                         blurRadius: 20,
                         offset: const Offset(0, 10),
-                        color: Colors.black.withValues(alpha: 0.12),
+                        color: colors.shadow,
                       ),
                     ],
                   ),

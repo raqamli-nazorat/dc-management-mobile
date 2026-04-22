@@ -1,5 +1,7 @@
 import 'package:dcmanagement/app_config.dart';
 import 'package:dcmanagement/screens/expense_request_form_screen.dart';
+import 'package:dcmanagement/screens/reports_screen.dart';
+import 'package:dcmanagement/screens/worker_my_requests_screen.dart';
 import 'package:dcmanagement/screens/expense_requests_screen.dart';
 import 'package:dcmanagement/screens/finance_history_screen.dart';
 import 'package:dcmanagement/screens/finance_screen.dart';
@@ -41,11 +43,23 @@ final appRouter = GoRouter(
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(path: '/pin', builder: (context, state) => const PinScreen()),
 
+    // /users/filter — /users/:id DAN OLDIN bo'lishi shart
+    GoRoute(
+      path: '/users/filter',
+      builder: (context, state) {
+        final args = state.extra as Map<String, dynamic>;
+        return UserFilterScreen(
+          initial: args['filter'] as UserFilter,
+          availableRoles: (args['roles'] as List).cast<String>(),
+        );
+      },
+    ),
     GoRoute(
       path: '/users/:id',
       builder: (context, state) =>
           UserDetailScreen(userId: int.parse(state.pathParameters['id']!)),
     ),
+
     // Finance sub screens
     GoRoute(
       path: '/finance/expense-requests',
@@ -67,18 +81,6 @@ final appRouter = GoRouter(
       builder: (context, state) => const RoleSelectScreen(),
     ),
 
-    // Users filter — ShellRoute tashqarisida, bottom bar ko'rinmaydi
-    GoRoute(
-      path: '/users/filter',
-      builder: (context, state) {
-        final args = state.extra as Map<String, dynamic>;
-        return UserFilterScreen(
-          initial: args['filter'] as UserFilter,
-          availableRoles: (args['roles'] as List).cast<String>(),
-        );
-      },
-    ),
-
     // ==================== ShellRoute (Bottom Navigation Bar bilan sahifalar) ====================
     ShellRoute(
       builder: (context, state, child) =>
@@ -89,6 +91,8 @@ final appRouter = GoRouter(
         GoRoute(path: '/users', builder: (_, __) => const UsersScreen()),
         GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
         GoRoute(path: '/finance', builder: (_, __) => const FinanceScreen()),
+        GoRoute(path: '/my-requests', builder: (_, __) => const WorkerMyRequestsScreen()),
+        GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
       ],
     ),
   ],

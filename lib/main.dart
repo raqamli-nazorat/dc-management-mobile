@@ -3,7 +3,6 @@ import 'package:dcmanagement/providers/theme_notifier.dart';
 import 'package:dcmanagement/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'services/pin_session.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

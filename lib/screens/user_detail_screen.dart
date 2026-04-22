@@ -283,7 +283,7 @@ class _DetailBody extends StatelessWidget {
 
           // Lavozimi
           _RoleRow(
-            dotColor: const Color(0xFF22C55E),
+            dotColor: colors.successStrong,
             label: 'Lavozimi',
             value: user.roleLabel,
             colors: colors,

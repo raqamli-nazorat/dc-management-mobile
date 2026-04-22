@@ -556,7 +556,7 @@ class _ExpenseCard extends StatelessWidget {
                 height: 28,
                 decoration: BoxDecoration(
                   color: isApproved
-                      ? const Color(0xFF34C759)
+                      ? colors.successStrong
                       : colors.backgroundElevation2,
                   borderRadius: BorderRadius.circular(6),
                   border: isApproved
@@ -564,9 +564,9 @@ class _ExpenseCard extends StatelessWidget {
                       : Border.all(color: colors.strokeStrong),
                 ),
                 child: isApproved
-                    ? const Icon(
+                    ? Icon(
                         Icons.check_rounded,
-                        color: Colors.white,
+                        color: colors.white,
                         size: 18,
                       )
                     : null,

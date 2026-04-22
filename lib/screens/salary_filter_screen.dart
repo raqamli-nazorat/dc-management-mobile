@@ -373,12 +373,12 @@ class _DropdownTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
           decoration: BoxDecoration(
-            color: const Color(0xFF111111),
+            color: colors.backgroundElevation1,
             borderRadius: isOpen
                 ? const BorderRadius.vertical(top: Radius.circular(12))
                 : BorderRadius.circular(12),
             border: Border.all(
-              color: isOpen ? colors.accentSub : const Color(0xFF292A2A),
+              color: isOpen ? colors.accentSub : colors.strokeSub,
             ),
           ),
           child: Row(
@@ -432,7 +432,7 @@ class _MonthList extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF111111),
+          color: colors.backgroundElevation1,
           borderRadius:
               const BorderRadius.vertical(bottom: Radius.circular(12)),
           border: Border(
@@ -489,12 +489,12 @@ class _DateTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
           decoration: BoxDecoration(
-            color: const Color(0xFF111111),
+            color: colors.backgroundElevation1,
             borderRadius: isOpen
                 ? const BorderRadius.vertical(top: Radius.circular(12))
                 : BorderRadius.circular(12),
             border: Border.all(
-              color: isOpen ? colors.accentSub : const Color(0xFF292A2A),
+              color: isOpen ? colors.accentSub : colors.strokeSub,
             ),
           ),
           child: Row(
@@ -532,7 +532,7 @@ class _InlineCalendar extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF111111),
+          color: colors.backgroundElevation1,
           borderRadius:
               const BorderRadius.vertical(bottom: Radius.circular(12)),
           border: Border(
@@ -546,7 +546,7 @@ class _InlineCalendar extends StatelessWidget {
             colorScheme: Theme.of(context).colorScheme.copyWith(
                   primary: colors.accentSub,
                   onSurface: colors.textStrong,
-                  surface: const Color(0xFF111111),
+                  surface: colors.backgroundElevation1,
                 ),
           ),
           child: CalendarDatePicker(
@@ -591,14 +591,14 @@ class _AmountField extends StatelessWidget {
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           filled: true,
-          fillColor: const Color(0xFF111111),
+          fillColor: colors.backgroundElevation1,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF292A2A)),
+            borderSide: BorderSide(color: colors.strokeSub),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF292A2A)),
+            borderSide: BorderSide(color: colors.strokeSub),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),

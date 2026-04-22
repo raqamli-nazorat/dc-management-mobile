@@ -4,6 +4,7 @@ class AppColors extends ThemeExtension<AppColors> {
   // ── Base ──────────────────────────────────────────────────────────────
   final Color white;
   final Color black;
+  final Color shadow;
 
   // ── Background ────────────────────────────────────────────────────────
   final Color backgroundBase;
@@ -54,9 +55,16 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color errorSoft;
   final Color errorDisabled;
 
+  // ── Success ───────────────────────────────────────────────────────────
+  final Color successStrong;
+  final Color successSub;
+  final Color successSoft;
+  final Color successDisabled;
+
   const AppColors({
     required this.white,
     required this.black,
+    required this.shadow,
     required this.backgroundBase,
     required this.backgroundElevation1,
     required this.backgroundElevation1Alt,
@@ -94,11 +102,16 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.errorSub,
     required this.errorSoft,
     required this.errorDisabled,
+    required this.successStrong,
+    required this.successSub,
+    required this.successSoft,
+    required this.successDisabled,
   });
 
   factory AppColors.light() => const AppColors(
         white: Color(0xFFFFFFFF),
         black: Color(0xFF000000),
+        shadow: Color(0x1F000000), // alpha 0.12
         backgroundBase: Color(0xFFFFFFFF),
         backgroundElevation1: Color(0xFFF8F9FC),
         backgroundElevation1Alt: Color(0xFFF1F3F9),
@@ -136,11 +149,16 @@ class AppColors extends ThemeExtension<AppColors> {
         errorSub: Color(0xFFFA5252),
         errorSoft: Color(0xFFFFF2F2),
         errorDisabled: Color(0xFFF8D7DA),
+        successStrong: Color(0xFF22C55E),
+        successSub: Color(0xFF4ADE80),
+        successSoft: Color(0xFFDCFCE7),
+        successDisabled: Color(0xFFF0FDF4),
       );
 
   factory AppColors.dark() => const AppColors(
-        white: Color(0xFF000000),
-        black: Color(0xFFFFFFFF),
+        white: Color(0xFFFFFFFF),
+        black: Color(0xFF000000),
+        shadow: Color(0x3D000000), // alpha 0.24
         backgroundBase: Color(0xFF000000),
         backgroundElevation1: Color(0xFF191A1A),
         backgroundElevation1Alt: Color(0xFF222323),
@@ -151,7 +169,7 @@ class AppColors extends ThemeExtension<AppColors> {
         accentStrong: Color(0xFF3F57B3),
         accentSub: Color(0xFF526ED3),
         accentSoft: Color(0xFF7F95E6),
-        accentDisabled: Color(0xFFE9EEFF),
+        accentDisabled: Color(0xFF1E2B5C),
         accentWhite: Color(0xFFFFFFFF),
         textStrong: Color(0xFFFFFFFF),
         textSub: Color(0xFFC2C8E0),
@@ -176,8 +194,12 @@ class AppColors extends ThemeExtension<AppColors> {
         iconInBlack: Color(0xFF000000),
         errorStrong: Color(0xFFE02D2D),
         errorSub: Color(0xFFFA5252),
-        errorSoft: Color(0xFFFFF2F2),
-        errorDisabled: Color(0xFFF8D7DA),
+        errorSoft: Color(0xFF2E1A1A),
+        errorDisabled: Color(0xFF402323),
+        successStrong: Color(0xFF22C55E),
+        successSub: Color(0xFF4ADE80),
+        successSoft: Color(0xFF142E1B),
+        successDisabled: Color(0xFF1B3D24),
       );
 
   /// Access from anywhere: `Theme.of(context).extension<AppColors>()!`
@@ -188,6 +210,7 @@ class AppColors extends ThemeExtension<AppColors> {
   AppColors copyWith({
     Color? white,
     Color? black,
+    Color? shadow,
     Color? backgroundBase,
     Color? backgroundElevation1,
     Color? backgroundElevation1Alt,
@@ -225,10 +248,15 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? errorSub,
     Color? errorSoft,
     Color? errorDisabled,
+    Color? successStrong,
+    Color? successSub,
+    Color? successSoft,
+    Color? successDisabled,
   }) =>
       AppColors(
         white: white ?? this.white,
         black: black ?? this.black,
+        shadow: shadow ?? this.shadow,
         backgroundBase: backgroundBase ?? this.backgroundBase,
         backgroundElevation1: backgroundElevation1 ?? this.backgroundElevation1,
         backgroundElevation1Alt:
@@ -269,6 +297,10 @@ class AppColors extends ThemeExtension<AppColors> {
         errorSub: errorSub ?? this.errorSub,
         errorSoft: errorSoft ?? this.errorSoft,
         errorDisabled: errorDisabled ?? this.errorDisabled,
+        successStrong: successStrong ?? this.successStrong,
+        successSub: successSub ?? this.successSub,
+        successSoft: successSoft ?? this.successSoft,
+        successDisabled: successDisabled ?? this.successDisabled,
       );
 
   @override
@@ -277,6 +309,7 @@ class AppColors extends ThemeExtension<AppColors> {
     return AppColors(
       white: Color.lerp(white, other.white, t)!,
       black: Color.lerp(black, other.black, t)!,
+      shadow: Color.lerp(shadow, other.shadow, t)!,
       backgroundBase: Color.lerp(backgroundBase, other.backgroundBase, t)!,
       backgroundElevation1:
           Color.lerp(backgroundElevation1, other.backgroundElevation1, t)!,
@@ -320,6 +353,10 @@ class AppColors extends ThemeExtension<AppColors> {
       errorSub: Color.lerp(errorSub, other.errorSub, t)!,
       errorSoft: Color.lerp(errorSoft, other.errorSoft, t)!,
       errorDisabled: Color.lerp(errorDisabled, other.errorDisabled, t)!,
+      successStrong: Color.lerp(successStrong, other.successStrong, t)!,
+      successSub: Color.lerp(successSub, other.successSub, t)!,
+      successSoft: Color.lerp(successSoft, other.successSoft, t)!,
+      successDisabled: Color.lerp(successDisabled, other.successDisabled, t)!,
     );
   }
 }

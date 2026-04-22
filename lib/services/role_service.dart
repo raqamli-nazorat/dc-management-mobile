@@ -5,14 +5,38 @@ class RoleService extends ChangeNotifier {
   static final RoleService instance = RoleService._();
   RoleService._();
 
-  static const _key = 'selected_role';
+  static const _key = 'main_role';
 
   String? _role;
   String? get role => _role;
   bool get hasRole => _role != null && _role!.isNotEmpty;
 
+  /// admin / superadmin
+  bool get isAdmin {
+    final r = _role?.toLowerCase();
+    return r == 'admin' || r == 'superadmin';
+  }
+
+  /// manager / accountant / observer  (admin emas)
+  bool get isManager {
+    final r = _role?.toLowerCase();
+    return r == 'manager' || r == 'accountant' || r == 'observer';
+  }
+
+  /// employee
+  bool get isWorker => _role?.toLowerCase() == 'employee';
+
   Future<String?> load() async {
-    final stored = await StorageService().getString(_key);
+    final storage = StorageService();
+    String? stored = await storage.getString(_key);
+    if (stored == null) {
+      final legacy = await storage.getString('selected_role');
+      if (legacy != null) {
+        await storage.saveString(_key, legacy);
+        await storage.remove('selected_role');
+        stored = legacy;
+      }
+    }
     if (stored == _role) return _role;
     _role = stored;
     notifyListeners();
@@ -30,7 +54,6 @@ class RoleService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 'admin' | 'manager' | 'employee'
   String get group {
     switch (_role?.toLowerCase()) {
       case 'superadmin':
@@ -43,15 +66,24 @@ class RoleService extends ChangeNotifier {
     }
   }
 
-  /// First tab route after login
-  String get homeRoute {
-    switch (group) {
+  String _getRoleLabel(String r) {
+    switch (r.toLowerCase()) {
+      case 'superadmin':
+        return 'Super Admin';
       case 'admin':
-        return '/users';
+        return 'Admin';
       case 'manager':
-        return '/projects';
+        return 'Menejer';
+      case 'accountant':
+        return 'Hisobchi';
+      case 'observer':
+        return 'Nazoratchi';
+      case 'employee':
+        return 'Xodim';
       default:
-        return '/finance';
+        return r[0].toUpperCase() + r.substring(1);
     }
   }
+
+  String get roleLabel => _role != null ? _getRoleLabel(_role!) : "Noma'lum";
 }

@@ -149,8 +149,8 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
           child: ElevatedButton(
             onPressed: () => _showConfirmModal(colors),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF02D15C),
-              foregroundColor: Colors.white,
+              backgroundColor: colors.successStrong,
+              foregroundColor: colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -327,12 +327,12 @@ class _ConfirmModal extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: const Color(0xFF02D15C).withValues(alpha: 0.12),
+              color: colors.successStrong.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.check_circle_outline_rounded,
-              color: Color(0xFF02D15C),
+              color: colors.successStrong,
               size: 26,
             ),
           ),
@@ -400,14 +400,14 @@ class _ConfirmModal extends StatelessWidget {
                   child: Container(
                     height: 52,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF02D15C),
+                      color: colors.successStrong,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.check_rounded,
-                            color: Colors.white, size: 18),
+                            color: colors.white, size: 18),
                         SizedBox(width: 6),
                         Text(
                           'Tasdiqlash',
@@ -415,7 +415,7 @@ class _ConfirmModal extends StatelessWidget {
                             fontFamily: 'Manrope',
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: colors.white,
                           ),
                         ),
                       ],

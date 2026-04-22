@@ -1,6 +1,6 @@
 import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/services/auth_service.dart';
-import 'package:dcmanagement/services/storage_service.dart';
+import 'package:dcmanagement/services/role_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -64,38 +64,37 @@ class RoleSelectScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "O'zingiz uchun rolni tanlang",
+                    "Siz dasturni bir nechta rol bilan foydalanishsiz mumkin",
                     style: TextStyle(
                       color: colors.textStrong,
                       fontSize: 28,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
                       fontFamily: "Manrope",
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Tizim funksiyalariga kirish siz tanlagan rolga bog'liq",
+                    "Quyidagilardan birini tanlang.",
                     style: TextStyle(
                       color: colors.textSub,
                       fontSize: 14,
                       height: 1.4,
                     ),
                   ),
-                  const SizedBox(height: 450),
+                  const Spacer(),
 
                   // Role Cards
-                  Expanded(
+                  Flexible(
                     child: ListView.separated(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.zero,
                       itemCount: roles.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 14),
                       itemBuilder: (context, index) {
                         final role = roles[index];
                         return GestureDetector(
                           onTap: () async {
-                            await StorageService().saveString(
-                              'selected_role',
-                              role,
-                            );
+                            await RoleService.instance.setRole(role);
                             if (!context.mounted) return;
                             context.go('/home');
                           },
