@@ -1,5 +1,6 @@
 import 'package:dcmanagement/app_config.dart';
 import 'package:dcmanagement/screens/expense_request_form_screen.dart';
+import 'package:dcmanagement/screens/my_requests_screen.dart';
 import 'package:dcmanagement/screens/reports_screen.dart';
 import 'package:dcmanagement/screens/worker_my_requests_screen.dart';
 import 'package:dcmanagement/screens/expense_requests_screen.dart';
@@ -73,6 +74,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/finance/history',
       builder: (_, __) => const FinanceHistoryScreen(),
+    ),
+    GoRoute(
+      path: '/finance/my-requests',
+      builder: (_, __) => const MyRequestsScreen(),
     ),
 
     // Select Role — Bottom bar bo'lmasligi uchun alohida

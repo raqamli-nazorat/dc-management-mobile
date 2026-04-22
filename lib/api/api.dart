@@ -199,6 +199,22 @@ class ApiService {
     return [];
   }
 
+  Future<List<Map<String, dynamic>>> getMyExpenseRequests(String token) async {
+    final response = await _dio.get(
+      'expense-request/',
+      queryParameters: {'my_request': 'true'},
+      options: _auth(token),
+    );
+    final body = response.data as Map<String, dynamic>;
+    final data = _unwrap(body);
+    if (data is Map<String, dynamic>) {
+      final results = data['results'] as List? ?? [];
+      return results.cast<Map<String, dynamic>>();
+    }
+    if (data is List) return data.cast<Map<String, dynamic>>();
+    return [];
+  }
+
   Future<List<Map<String, dynamic>>> getPayrolls(String token) async {
     final response = await _dio.get('payrolls/', options: _auth(token));
     final body = response.data as Map<String, dynamic>;
