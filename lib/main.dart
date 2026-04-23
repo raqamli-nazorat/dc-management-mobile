@@ -1,12 +1,14 @@
 import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/providers/theme_notifier.dart';
 import 'package:dcmanagement/routes/app_routes.dart';
+import 'package:dcmanagement/services/role_service.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await ThemeNotifier.load(); // sets ThemeNotifier.instance
+  await ThemeNotifier.load();
+  await RoleService.instance.load();
   runApp(MyApp(themeNotifier: ThemeNotifier.instance));
 }
 

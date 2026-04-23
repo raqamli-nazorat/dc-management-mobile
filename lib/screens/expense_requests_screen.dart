@@ -223,9 +223,9 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
     final colors = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: colors.backgroundElevation1Alt,
+      backgroundColor: colors.backgroundBase,
       appBar: AppBar(
-        backgroundColor: colors.backgroundElevation1Alt,
+        backgroundColor: colors.backgroundBase,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_rounded, color: colors.textStrong),

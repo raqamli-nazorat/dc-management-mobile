@@ -1047,14 +1047,14 @@ class _ThemeOption extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 18, color: selected ? Colors.white : colors.iconSub),
+              Icon(icon, size: 18, color: selected ? colors.white : colors.iconSub),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  color: selected ? Colors.white : colors.textSoft,
+                  color: selected ? colors.white : colors.textSoft,
                 ),
               ),
             ],

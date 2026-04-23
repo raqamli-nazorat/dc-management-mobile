@@ -221,7 +221,7 @@ class _UsersScreenState extends State<UsersScreen> {
                           LucideIcons.filter,
                           size: 18,
                           color: _filter.hasActive
-                              ? Colors.white
+                              ? colors.white
                               : colors.iconSub,
                         ),
                       ),
@@ -368,7 +368,7 @@ class _UsersScreenState extends State<UsersScreen> {
                 label: const Text('Qayta urinish'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colors.accentSub,
-                  foregroundColor: Colors.white,
+                  foregroundColor: colors.white,
                 ),
               ),
             ],

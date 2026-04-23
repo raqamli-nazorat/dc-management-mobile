@@ -3,24 +3,23 @@ import 'package:dcmanagement/services/auth_service.dart';
 import 'package:dcmanagement/services/role_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 
 class RoleSelectScreen extends StatelessWidget {
   const RoleSelectScreen({super.key});
 
-  IconData _getIcon(String role) {
+  String _getIconAsset(String role) {
     switch (role.toLowerCase()) {
       case 'superadmin':
       case 'admin':
-        return LucideIcons.building2;
+        return 'assets/roles_icon/admin.png';
       case 'manager':
-        return LucideIcons.briefcase;
+        return 'assets/roles_icon/manager.png';
       case 'accountant':
-        return LucideIcons.coins; // Hisobchi uchun yaxshiroq icon
+        return 'assets/roles_icon/acsessor.png';
       case 'observer':
-        return LucideIcons.globe;
+        return 'assets/roles_icon/modertator.png';
       default:
-        return LucideIcons.user;
+        return 'assets/roles_icon/worker.png';
     }
   }
 
@@ -64,53 +63,59 @@ class RoleSelectScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Siz dasturni bir nechta rol bilan foydalanishsiz mumkin",
+                    "O'zingiz uchun rolni tanlang",
                     style: TextStyle(
                       color: colors.textStrong,
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
+                      height: 1.2,
                       fontFamily: "Manrope",
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Quyidagilardan birini tanlang.",
+                    "Tizim funksiyalariga kirish siz tanlagan rolga bog'liq",
                     style: TextStyle(
-                      color: colors.textSub,
-                      fontSize: 14,
+                      color: colors.white,
+                      fontSize: 15,
+                      letterSpacing: 1.2,
                       height: 1.4,
                     ),
                   ),
                   const Spacer(),
 
                   // Role Cards
-                  Flexible(
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      padding: EdgeInsets.zero,
-                      itemCount: roles.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 14),
-                      itemBuilder: (context, index) {
-                        final role = roles[index];
-                        return GestureDetector(
-                          onTap: () async {
-                            await RoleService.instance.setRole(role);
-                            if (!context.mounted) return;
-                            context.go('/home');
-                          },
-                          child: Container(
-                            height: 68,
-                            decoration: BoxDecoration(
-                              color: colors.backgroundElevation1,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    itemCount: roles.length,
+                    separatorBuilder: (context2, i) =>
+                        const SizedBox(height: 14),
+                    itemBuilder: (context, index) {
+                      final role = roles[index];
+                      return GestureDetector(
+                        onTap: () async {
+                          await RoleService.instance.setRole(role);
+                          if (!context.mounted) return;
+                          context.go('/home');
+                        },
+                        child: Container(
+                          height: 68,
+                          decoration: BoxDecoration(
+                            color: colors.backgroundElevation1,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Center(
                             child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 const SizedBox(width: 20),
-                                Icon(
-                                  _getIcon(role),
+                                Image.asset(
+                                  _getIconAsset(role),
+                                  width: 28,
+                                  height: 28,
                                   color: colors.iconStrong,
-                                  size: 24,
                                 ),
                                 const SizedBox(width: 16),
                                 Text(
@@ -121,13 +126,13 @@ class RoleSelectScreen extends StatelessWidget {
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                const Spacer(),
+                                // const Spacer(),
                               ],
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

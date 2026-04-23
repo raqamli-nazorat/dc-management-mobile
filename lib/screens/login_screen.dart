@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/services/auth_service.dart';
+import 'package:dcmanagement/services/role_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -97,6 +98,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 "Rol topilmadi. Administrator bilan bog'laning.",
           );
         } else if (roles.length == 1) {
+          await RoleService.instance.setRole(roles[0]);
+          if (!mounted) return;
           context.go('/home');
         } else {
           context.go('/select-role');

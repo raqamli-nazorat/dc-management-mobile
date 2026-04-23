@@ -9,7 +9,11 @@ import 'package:intl/intl.dart';
 class ExpenseDetailScreen extends StatefulWidget {
   final int id;
   final bool canDelete;
-  const ExpenseDetailScreen({super.key, required this.id, this.canDelete = false});
+  const ExpenseDetailScreen({
+    super.key,
+    required this.id,
+    this.canDelete = false,
+  });
 
   @override
   State<ExpenseDetailScreen> createState() => _ExpenseDetailScreenState();
@@ -21,7 +25,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
   Map<String, dynamic>? _data;
   bool _loading = true;
   String? _error;
-  bool _confirmed = false;
+  bool _isPaid = false;
 
   @override
   void initState() {
@@ -40,8 +44,8 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
       final data = await _api.getExpenseRequestDetail(token, widget.id);
       setState(() {
         _data = data;
-        _confirmed = (data['status'] as String?) == 'confirmed' ||
-            (data['status'] as String?) == 'paid';
+        _isPaid = (data['status'] as String?) == 'paid' ||
+            data['paid_at'] != null;
         _loading = false;
       });
     } catch (e) {
@@ -52,12 +56,12 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
     }
   }
 
-  Future<void> _confirmRequest() async {
+  Future<void> _payRequest() async {
     try {
       final token = await _auth.getToken();
       if (token == null) throw Exception('Token topilmadi');
-      await _api.confirmExpenseRequest(token, widget.id);
-      setState(() => _confirmed = true);
+      await _api.payExpenseRequest(token, widget.id);
+      setState(() => _isPaid = true);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -66,7 +70,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
             e.toString(),
             style: const TextStyle(fontFamily: 'Manrope'),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.of(context).errorSub,
         ),
       );
     }
@@ -83,9 +87,11 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString(),
-              style: const TextStyle(fontFamily: 'Manrope')),
-          backgroundColor: Colors.red,
+          content: Text(
+            e.toString(),
+            style: const TextStyle(fontFamily: 'Manrope'),
+          ),
+          backgroundColor: AppColors.of(context).errorSub,
         ),
       );
     }
@@ -100,7 +106,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
     if (confirmed == true && mounted) await _deleteRequest();
   }
 
-  Future<void> _showConfirmModal(AppColors colors) async {
+  Future<void> _showPayModal(AppColors colors) async {
     await showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.5),
@@ -108,7 +114,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
         colors: colors,
         onConfirm: () async {
           Navigator.of(ctx).pop();
-          await _confirmRequest();
+          await _payRequest();
         },
       ),
     );
@@ -134,6 +140,9 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
   }
 
   bool get _isManager => RoleService.instance.group == 'manager';
+  bool get _canPay =>
+      RoleService.instance.group == 'manager' ||
+      RoleService.instance.group == 'admin';
 
   @override
   Widget build(BuildContext context) {
@@ -175,13 +184,45 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
     if (_loading || _error != null || _data == null) return null;
 
     final status = _data!['status'] as String? ?? 'pending';
-    final isPaid = status == 'paid' || _data!['paid_at'] != null;
-    final isConfirmed = status == 'confirmed' || status == 'paid' ||
+    final isConfirmed =
+        status == 'confirmed' ||
+        status == 'paid' ||
         _data!['confirmed_at'] != null;
 
     // Worker's own request panel
     if (widget.canDelete) {
-      final isDone = isPaid && isConfirmed;
+      if (isConfirmed) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: null,
+                icon: Icon(Icons.check_rounded, color: colors.white, size: 20),
+                label: Text(
+                  "To'langan",
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colors.successStrong,
+                  disabledBackgroundColor: colors.successStrong,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
       return SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -189,33 +230,30 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
             width: double.infinity,
             height: 52,
             child: ElevatedButton(
-              onPressed: isDone
-                  ? null
-                  : () async {
-                      final result = await Navigator.of(context).push<bool>(
-                        MaterialPageRoute(
-                          builder: (_) => ExpenseRequestEditScreen(
-                              initialData: _data!),
-                        ),
-                      );
-                      if (result == true && mounted) _load();
-                    },
+              onPressed: () async {
+                final result = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        ExpenseRequestEditScreen(initialData: _data!),
+                  ),
+                );
+                if (result == true && mounted) _load();
+              },
               style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    isDone ? colors.successStrong : colors.accentSub,
+                backgroundColor: colors.accentSub,
                 foregroundColor: colors.white,
-                disabledBackgroundColor: colors.successStrong,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               child: Text(
-                isDone ? 'Tasdiqlangan' : 'Tahrirlash',
-                style: const TextStyle(
+                'Tahrirlash',
+                style: TextStyle(
                   fontFamily: 'Manrope',
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: colors.white,
                 ),
               ),
             ),
@@ -224,9 +262,9 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
       );
     }
 
-    // Manager confirm panel
-    if (!_isManager) return null;
-    if (_confirmed) return null;
+    // Manager / superadmin pay panel
+    if (!_canPay) return null;
+    if (_isPaid) return null;
 
     return SafeArea(
       child: Padding(
@@ -234,22 +272,24 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
         child: SizedBox(
           width: double.infinity,
           height: 52,
-          child: ElevatedButton(
-            onPressed: () => _showConfirmModal(colors),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colors.successStrong,
-              foregroundColor: colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-            ),
-            child: const Text(
+          child: ElevatedButton.icon(
+            onPressed: () => _showPayModal(colors),
+            icon: Icon(Icons.check_rounded, color: colors.white, size: 20),
+            label: Text(
               'Tasdiqlash',
               style: TextStyle(
                 fontFamily: 'Manrope',
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: colors.white,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colors.successStrong,
+              foregroundColor: colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
           ),
@@ -260,8 +300,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
 
   Widget _buildBody(AppColors colors) {
     if (_loading) {
-      return Center(
-          child: CircularProgressIndicator(color: colors.accentSub));
+      return Center(child: CircularProgressIndicator(color: colors.accentSub));
     }
     if (_error != null) {
       return Center(
@@ -270,8 +309,11 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline_rounded,
-                  color: colors.errorSub, size: 48),
+              Icon(
+                Icons.error_outline_rounded,
+                color: colors.errorSub,
+                size: 48,
+              ),
               const SizedBox(height: 12),
               Text(
                 _error!,
@@ -289,13 +331,16 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
                   backgroundColor: colors.accentSub,
                   foregroundColor: colors.textWhite,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   elevation: 0,
                 ),
                 child: const Text(
                   'Qayta urinish',
                   style: TextStyle(
-                      fontFamily: 'Manrope', fontWeight: FontWeight.w900),
+                    fontFamily: 'Manrope',
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ],
@@ -323,7 +368,9 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
     final status = _data!['status'] as String? ?? 'pending';
     final isPaid = status == 'paid' || _data!['paid_at'] != null;
     final isConfirmed =
-        status == 'confirmed' || status == 'paid' || _data!['confirmed_at'] != null;
+        status == 'confirmed' ||
+        status == 'paid' ||
+        _data!['confirmed_at'] != null;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
@@ -340,7 +387,8 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
                 color: colors.backgroundElevation3,
               ),
               clipBehavior: Clip.antiAlias,
-              child: (avatarUrl != null &&
+              child:
+                  (avatarUrl != null &&
                       (avatarUrl.startsWith('http://') ||
                           avatarUrl.startsWith('https://')))
                   ? Image.network(
@@ -376,9 +424,10 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
           ),
           const SizedBox(height: 12),
           _InfoField(
-              label: 'Summa',
-              value: _formatAmount(_data!['amount']),
-              colors: colors),
+            label: 'Summa',
+            value: _formatAmount(_data!['amount']),
+            colors: colors,
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -441,118 +490,124 @@ class _ConfirmModal extends StatelessWidget {
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
       child: Container(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-      decoration: BoxDecoration(
-        color: colors.backgroundElevation1,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: colors.successStrong.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+        decoration: BoxDecoration(
+          color: colors.backgroundElevation1,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: colors.successStrong.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                Icons.check_circle_outline_rounded,
+                color: colors.successStrong,
+                size: 26,
+              ),
             ),
-            child: Icon(
-              Icons.check_circle_outline_rounded,
-              color: colors.successStrong,
-              size: 26,
+            const SizedBox(height: 16),
+            Text(
+              "To'lovni tasdiqlaysizmi?",
+              style: TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: colors.textStrong,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            "Ish haqqini tasdiqlaysizmi?",
-            style: TextStyle(
-              fontFamily: 'Manrope',
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: colors.textStrong,
+            const SizedBox(height: 8),
+            Text(
+              "To'lov yuborilgandan so'ng bu amalni bekor qilib bo'lmaydi",
+              style: TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: colors.textSub,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "Tasdiqlangandan so'ng bu amalni bekor qilib bo'lmaydi",
-            style: TextStyle(
-              fontFamily: 'Manrope',
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: colors.textSub,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              // Bekor qilish
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: colors.strokeSub),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.close_rounded,
-                            color: colors.textSub, size: 18),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Bekor qilish',
-                          style: TextStyle(
-                            fontFamily: 'Manrope',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                // Bekor qilish
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: colors.strokeSub),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.close_rounded,
                             color: colors.textSub,
+                            size: 18,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 6),
+                          Text(
+                            'Bekor qilish',
+                            style: TextStyle(
+                              fontFamily: 'Manrope',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: colors.textSub,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              // Tasdiqlash
-              Expanded(
-                child: GestureDetector(
-                  onTap: onConfirm,
-                  child: Container(
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: colors.successStrong,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.check_rounded,
-                            color: colors.white, size: 18),
-                        SizedBox(width: 6),
-                        Text(
-                          'Tasdiqlash',
-                          style: TextStyle(
-                            fontFamily: 'Manrope',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
+                const SizedBox(width: 12),
+                // Tasdiqlash
+                Expanded(
+                  child: GestureDetector(
+                    onTap: onConfirm,
+                    child: Container(
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: colors.successStrong,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.check_rounded,
                             color: colors.white,
+                            size: 18,
                           ),
-                        ),
-                      ],
+                          SizedBox(width: 6),
+                          Text(
+                            'Tasdiqlash',
+                            style: TextStyle(
+                              fontFamily: 'Manrope',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
-      ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -578,22 +633,12 @@ class _DeleteModal extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: colors.errorSub.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(Icons.delete_outline_rounded,
-                  color: colors.errorSub, size: 28),
-            ),
             const SizedBox(height: 16),
             Text(
-              "So'rovni o'chirish",
+              "So‘rovni bekor qilish",
               style: TextStyle(
                 fontFamily: 'Manrope',
-                fontSize: 18,
+                fontSize: 19,
                 fontWeight: FontWeight.w800,
                 color: colors.textStrong,
               ),
@@ -625,11 +670,14 @@ class _DeleteModal extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.close_rounded,
-                              color: colors.textSub, size: 18),
+                          Icon(
+                            Icons.arrow_back,
+                            color: colors.textSub,
+                            size: 18,
+                          ),
                           const SizedBox(width: 6),
                           Text(
-                            'Bekor qilish',
+                            'Orqaga',
                             style: TextStyle(
                               fontFamily: 'Manrope',
                               fontSize: 14,
@@ -655,11 +703,8 @@ class _DeleteModal extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.delete_rounded,
-                              color: colors.white, size: 18),
-                          const SizedBox(width: 6),
                           Text(
-                            "O'chirish",
+                            "So‘rovni bekor qilish",
                             style: TextStyle(
                               fontFamily: 'Manrope',
                               fontSize: 14,
@@ -748,57 +793,60 @@ class _InitialAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Text(
-          initial,
-          style: TextStyle(
-            fontFamily: 'Manrope',
-            fontWeight: FontWeight.w900,
-            fontSize: 32,
-            color: colors.accentSub,
-          ),
-        ),
-      );
+    child: Text(
+      initial,
+      style: TextStyle(
+        fontFamily: 'Manrope',
+        fontWeight: FontWeight.w900,
+        fontSize: 32,
+        color: colors.accentSub,
+      ),
+    ),
+  );
 }
 
 class _InfoField extends StatelessWidget {
   final String label;
   final String value;
   final AppColors colors;
-  const _InfoField(
-      {required this.label, required this.value, required this.colors});
+  const _InfoField({
+    required this.label,
+    required this.value,
+    required this.colors,
+  });
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Manrope',
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: colors.textSub,
-            ),
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: TextStyle(
+          fontFamily: 'Manrope',
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: colors.textSub,
+        ),
+      ),
+      const SizedBox(height: 6),
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: colors.backgroundElevation1,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colors.strokeSub),
+        ),
+        child: Text(
+          value,
+          style: TextStyle(
+            fontFamily: 'Manrope',
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: colors.textStrong,
           ),
-          const SizedBox(height: 6),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            decoration: BoxDecoration(
-              color: colors.backgroundElevation1,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colors.strokeSub),
-            ),
-            child: Text(
-              value,
-              style: TextStyle(
-                fontFamily: 'Manrope',
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: colors.textStrong,
-              ),
-            ),
-          ),
-        ],
-      );
+        ),
+      ),
+    ],
+  );
 }

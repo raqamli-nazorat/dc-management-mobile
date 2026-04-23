@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dcmanagement/api/api.dart';
 import 'package:dcmanagement/colors/app_colors.dart';
+import 'package:dcmanagement/screens/salary_detail_screen.dart';
 import 'package:dcmanagement/screens/salary_filter_screen.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:dcmanagement/widgets/app_state_widgets.dart';
@@ -123,11 +124,13 @@ class _SalaryScreenState extends State<SalaryScreen> {
     return s;
   }
 
-  bool _isPaid(Map<String, dynamic> item) {
+  bool _isConfirmed(Map<String, dynamic> item) {
+    final isConfirmedField = item['is_confirmed'];
+    if (isConfirmedField is bool) return isConfirmedField;
     final isPaidField = item['is_paid'];
     if (isPaidField is bool) return isPaidField;
     final status = item['status'] as String? ?? '';
-    return status == 'paid';
+    return status == 'confirmed' || status == 'paid';
   }
 
   List<Map<String, dynamic>> _applyFilter(List<Map<String, dynamic>> list) {
@@ -194,9 +197,9 @@ class _SalaryScreenState extends State<SalaryScreen> {
     final colors = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: colors.backgroundElevation1Alt,
+      backgroundColor: colors.backgroundBase,
       appBar: AppBar(
-        backgroundColor: colors.backgroundElevation1Alt,
+        backgroundColor: colors.backgroundBase,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_rounded, color: colors.textStrong),
@@ -363,12 +366,22 @@ class _SalaryScreenState extends State<SalaryScreen> {
           final item = _filtered[index];
           final rawMonth = item['month'] ?? item['period'];
           final monthLabel = _monthLabel(rawMonth);
-          final isPaidItem = _isPaid(item);
-          return _SalaryCard(
-            item: item,
-            monthLabel: monthLabel,
-            isPaid: isPaidItem,
-            colors: colors,
+          final isConfirmedItem = _isConfirmed(item);
+          return GestureDetector(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => SalaryDetailScreen(
+                  item: item,
+                  monthLabel: monthLabel,
+                ),
+              ),
+            ),
+            child: _SalaryCard(
+              item: item,
+              monthLabel: monthLabel,
+              isPaid: isConfirmedItem,
+              colors: colors,
+            ),
           );
         },
       ),

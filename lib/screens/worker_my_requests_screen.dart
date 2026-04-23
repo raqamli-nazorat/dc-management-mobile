@@ -101,9 +101,9 @@ class _WorkerMyRequestsScreenState extends State<WorkerMyRequestsScreen> {
     final colors = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: colors.backgroundElevation1Alt,
+      backgroundColor: colors.backgroundBase,
       appBar: AppBar(
-        backgroundColor: colors.backgroundElevation1Alt,
+        backgroundColor: colors.backgroundBase,
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [

@@ -673,7 +673,7 @@ class _ErrorView extends StatelessWidget {
               label: const Text('Qayta urinish'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: colors.accentSub,
-                foregroundColor: Colors.white,
+                foregroundColor: colors.white,
               ),
             ),
           ],

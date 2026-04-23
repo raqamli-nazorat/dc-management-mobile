@@ -1,3 +1,4 @@
+import 'package:dcmanagement/models/ledger_model.dart';
 import 'package:dcmanagement/models/user_model.dart';
 import 'package:dcmanagement/services/pin_session.dart';
 import 'package:dcmanagement/services/storage_service.dart';
@@ -27,6 +28,7 @@ class _TokenRefreshInterceptor extends Interceptor {
     // validateStatus allows 401 through as a normal response — catch it here
     if (response.statusCode == 401 &&
         !response.requestOptions.path.contains('auth/token/refresh/') &&
+        !response.requestOptions.path.contains('auth/login/') &&
         !_isRefreshing) {
       _isRefreshing = true;
       try {
@@ -216,7 +218,7 @@ class ApiService {
   }
 
   Future<List<Map<String, dynamic>>> getPayrolls(String token) async {
-    final response = await _dio.get('payrolls/', options: _auth(token));
+    final response = await _dio.get('payroll/', options: _auth(token));
     final body = response.data as Map<String, dynamic>;
     final data = _unwrap(body);
     if (data is Map<String, dynamic>) {
@@ -224,6 +226,16 @@ class ApiService {
     }
     if (data is List) return data.cast<Map<String, dynamic>>();
     return [];
+  }
+
+  Future<void> confirmPayroll(String token, int id) async {
+    final response = await _dio.post(
+      'payroll/confirm/',
+      data: {'payroll_ids': [id]},
+      options: _auth(token),
+    );
+    final body = response.data as Map<String, dynamic>;
+    _unwrap(body);
   }
 
   Future<List<Map<String, dynamic>>> getProjects(String token) async {
@@ -322,6 +334,18 @@ class ApiService {
       debugPrint('Message: ${e.message}');
       rethrow;
     }
+  }
+
+  // ── Ledger/History ──────────────────────────────────────────────────────────
+
+  Future<List<LedgerModel>> getLedgerEntries(String token) async {
+    final response = await _dio.get('ledger/', options: _auth(token));
+    final body = response.data as Map<String, dynamic>;
+    final data = _unwrap(body) as Map<String, dynamic>? ?? {};
+    final results = data['results'] as List? ?? [];
+    return results
+        .map((e) => LedgerModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   // ── Legacy ────────────────────────────────────────────────────────────────

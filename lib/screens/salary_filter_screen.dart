@@ -255,7 +255,7 @@ class _SalaryFilterScreenState extends State<SalaryFilterScreen> {
                         value: _filter.hasJarima,
                         onChanged: (v) =>
                             setState(() => _filter = _filter.copyWith(hasJarima: v)),
-                        activeThumbColor: Colors.white,
+                        activeThumbColor: colors.white,
                         activeTrackColor: colors.accentSub,
                         inactiveThumbColor: colors.iconSub,
                         inactiveTrackColor: colors.strokeStrong,

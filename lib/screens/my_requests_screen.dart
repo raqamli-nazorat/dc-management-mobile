@@ -109,7 +109,9 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
         final project = item['project_info'] as Map<String, dynamic>? ?? {};
         final category =
             item['expense_category_info'] as Map<String, dynamic>? ?? {};
-        return (user['username'] as String? ?? '').toLowerCase().contains(query) ||
+        return (user['username'] as String? ?? '').toLowerCase().contains(
+              query,
+            ) ||
             (project['title'] as String? ?? '').toLowerCase().contains(query) ||
             (category['title'] as String? ?? '').toLowerCase().contains(query);
       }).toList();
@@ -121,9 +123,9 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
     final colors = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: colors.backgroundElevation1Alt,
+      backgroundColor: colors.backgroundBase,
       appBar: AppBar(
-        backgroundColor: colors.backgroundElevation1Alt,
+        backgroundColor: colors.backgroundBase,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_rounded, color: colors.textStrong),
@@ -134,8 +136,9 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
             margin: const EdgeInsets.only(right: 16),
             child: ElevatedButton.icon(
               onPressed: () async {
-                final result =
-                    await context.push<bool>('/finance/expense-request-form');
+                final result = await context.push<bool>(
+                  '/finance/expense-request-form',
+                );
                 if (result == true && mounted) _load();
               },
               iconAlignment: IconAlignment.end,
@@ -187,7 +190,9 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                       decoration: InputDecoration(
                         hintText: 'Qidirish...',
                         hintStyle: TextStyle(
-                            fontFamily: 'Manrope', color: colors.textSoft),
+                          fontFamily: 'Manrope',
+                          color: colors.textSoft,
+                        ),
                         suffixIcon: IconButton(
                           icon: Icon(Icons.close, color: colors.iconSub),
                           onPressed: () => setState(() {
@@ -209,7 +214,9 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                           borderSide: BorderSide(color: colors.accentSub),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 12),
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
                         filled: true,
                         fillColor: colors.backgroundElevation1,
                       ),
@@ -237,8 +244,11 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(color: colors.strokeSub),
                             ),
-                            child: Icon(LucideIcons.search,
-                                color: colors.iconSub, size: 20),
+                            child: Icon(
+                              LucideIcons.search,
+                              color: colors.iconSub,
+                              size: 20,
+                            ),
                           ),
                         ),
                       ],
@@ -253,8 +263,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
 
   Widget _buildBody(AppColors colors) {
     if (_loading) {
-      return Center(
-          child: CircularProgressIndicator(color: colors.accentSub));
+      return Center(child: CircularProgressIndicator(color: colors.accentSub));
     }
     if (_throttleSeconds != null) {
       return ThrottleCountdown(seconds: _throttleSeconds!, colors: colors);
@@ -281,8 +290,11 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                       color: colors.backgroundElevation2,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Icon(Icons.inbox_outlined,
-                        size: 36, color: colors.iconSoft),
+                    child: Icon(
+                      Icons.inbox_outlined,
+                      size: 36,
+                      color: colors.iconSoft,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -325,8 +337,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
             if (id == null) return;
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) =>
-                    ExpenseDetailScreen(id: id, canDelete: true),
+                builder: (_) => ExpenseDetailScreen(id: id, canDelete: true),
               ),
             );
           },
@@ -335,7 +346,6 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
       ),
     );
   }
-
 }
 
 // ── Card ──────────────────────────────────────────────────────────────────────
@@ -386,7 +396,9 @@ class _MyRequestCard extends StatelessWidget {
 
     final isPaid = status == 'paid' || item['paid_at'] != null;
     final isConfirmed =
-        status == 'confirmed' || status == 'paid' || item['confirmed_at'] != null;
+        status == 'confirmed' ||
+        status == 'paid' ||
+        item['confirmed_at'] != null;
 
     final initial = username.isNotEmpty ? username[0].toUpperCase() : '?';
     final avatarBgColor = _avatarColor(username);
@@ -445,10 +457,10 @@ class _MyRequestCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           InfoRow(
             colors: colors,
-            label: 'Xarajat turi:  ',
+            label: 'Toifa:  ',
             value: categoryTitle,
             valueBold: true,
           ),
@@ -459,7 +471,7 @@ class _MyRequestCard extends StatelessWidget {
             value: amount,
             valueBold: true,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 4),
           Row(
             children: [
               _CheckRow(
@@ -511,12 +523,9 @@ class _CheckRow extends StatelessWidget {
           width: 24,
           height: 24,
           decoration: BoxDecoration(
-            color: checked
-                ? colors.successStrong
-                : colors.backgroundElevation2,
+            color: checked ? colors.successStrong : colors.backgroundElevation2,
             borderRadius: BorderRadius.circular(6),
-            border:
-                checked ? null : Border.all(color: colors.strokeStrong),
+            border: checked ? null : Border.all(color: colors.strokeStrong),
           ),
           child: checked
               ? Icon(Icons.check_rounded, color: colors.white, size: 16)
