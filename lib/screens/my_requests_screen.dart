@@ -325,7 +325,9 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
             if (id == null) return;
             Navigator.of(context).push(
               MaterialPageRoute(
-                  builder: (_) => ExpenseDetailScreen(id: id)),
+                builder: (_) =>
+                    ExpenseDetailScreen(id: id, canDelete: true),
+              ),
             );
           },
           child: _MyRequestCard(item: _filtered[index], colors: colors),
@@ -333,6 +335,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
       ),
     );
   }
+
 }
 
 // ── Card ──────────────────────────────────────────────────────────────────────

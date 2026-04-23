@@ -1,11 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:dcmanagement/api/api.dart';
 import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/screens/expense_detail_screen.dart';
 import 'package:dcmanagement/services/auth_service.dart';
-import 'package:dcmanagement/services/storage_service.dart';
 import 'package:dcmanagement/widgets/app_state_widgets.dart';
 import 'package:dcmanagement/widgets/info_row.dart';
 import 'package:flutter/material.dart';
@@ -27,7 +25,6 @@ class _WorkerMyRequestsScreenState extends State<WorkerMyRequestsScreen> {
   List<Map<String, dynamic>> _items = [];
   bool _loading = true;
   String? _error;
-  int? _currentUserId;
 
   int? _throttleSeconds;
   Timer? _throttleTimer;
@@ -35,24 +32,13 @@ class _WorkerMyRequestsScreenState extends State<WorkerMyRequestsScreen> {
   @override
   void initState() {
     super.initState();
-    _init();
+    _load();
   }
 
   @override
   void dispose() {
     _throttleTimer?.cancel();
     super.dispose();
-  }
-
-  Future<void> _init() async {
-    final raw = await StorageService().getString(StorageService.userKey);
-    if (raw != null) {
-      try {
-        final user = jsonDecode(raw) as Map<String, dynamic>;
-        _currentUserId = user['id'] as int?;
-      } catch (_) {}
-    }
-    await _load();
   }
 
   int? _parseThrottleSeconds(String msg) {
@@ -86,16 +72,9 @@ class _WorkerMyRequestsScreenState extends State<WorkerMyRequestsScreen> {
     try {
       final token = await _auth.getToken();
       if (token == null) throw Exception('Token topilmadi');
-      final all = await _api.getExpenseRequests(token);
-      final filtered = _currentUserId == null
-          ? all
-          : all.where((item) {
-              final userInfo =
-                  item['user_info'] as Map<String, dynamic>? ?? {};
-              return userInfo['id'] == _currentUserId;
-            }).toList();
+      final data = await _api.getMyExpenseRequests(token);
       setState(() {
-        _items = filtered;
+        _items = data;
         _loading = false;
       });
     } on ApiException catch (e) {
@@ -255,7 +234,9 @@ class _WorkerMyRequestsScreenState extends State<WorkerMyRequestsScreen> {
             if (id == null) return;
             Navigator.of(context).push(
               MaterialPageRoute(
-                  builder: (_) => ExpenseDetailScreen(id: id)),
+                builder: (_) =>
+                    ExpenseDetailScreen(id: id, canDelete: true),
+              ),
             );
           },
           child: _RequestCard(item: _items[index], colors: colors),
@@ -273,6 +254,22 @@ class _RequestCard extends StatelessWidget {
 
   const _RequestCard({required this.item, required this.colors});
 
+  static const _avatarColors = [
+    Color(0xFF7C6AF7),
+    Color(0xFF526ED3),
+    Color(0xFF3F8FA8),
+    Color(0xFF5A9E6F),
+    Color(0xFFB06B3A),
+    Color(0xFF8F4CA8),
+    Color(0xFFA84C6E),
+    Color(0xFF4C7EA8),
+  ];
+
+  Color _avatarColor(String name) {
+    if (name.isEmpty) return _avatarColors[0];
+    return _avatarColors[name.codeUnitAt(0) % _avatarColors.length];
+  }
+
   String _formatAmount(dynamic raw) {
     final num value = num.tryParse(raw?.toString() ?? '') ?? 0;
     final formatter = NumberFormat('#,##0.00', 'uz_UZ');
@@ -282,43 +279,37 @@ class _RequestCard extends StatelessWidget {
         .replaceAll('.', ',');
   }
 
-  String _formatDate(String? raw) {
-    if (raw == null) return '—';
-    try {
-      final dt = DateTime.parse(raw).toLocal();
-      return DateFormat('dd.MM.yyyy  HH:mm').format(dt);
-    } catch (_) {
-      return raw;
+  String _categoryLabel(Map<String, dynamic> item) {
+    final category = item['expense_category_info'] as Map<String, dynamic>?;
+    if (category != null && (category['title'] as String?)?.isNotEmpty == true) {
+      return category['title'] as String;
     }
+    const typeMap = {
+      'withdrawal': "Mablag' chiqarish",
+      'expense': 'Xarajat',
+      'income': 'Daromad',
+    };
+    final type = item['type'] as String? ?? '';
+    return typeMap[type] ?? type;
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = item['user_info'] as Map<String, dynamic>? ?? {};
     final project = item['project_info'] as Map<String, dynamic>? ?? {};
-    final category =
-        item['expense_category_info'] as Map<String, dynamic>? ?? {};
 
-    final projectTitle = project['title'] as String? ?? '—';
-    final categoryTitle = category['title'] as String? ?? '—';
+    final username = user['username'] as String? ?? '—';
+    final projectTitle = project['title'] as String? ?? '';
+    final categoryTitle = _categoryLabel(item);
     final amount = _formatAmount(item['amount']);
     final status = item['status'] as String? ?? 'pending';
-    final createdAt = _formatDate(item['created_at'] as String?);
 
-    final isApproved = status == 'confirmed' || status == 'paid';
-    final isPaid = status == 'paid';
+    final isPaid = status == 'paid' || item['paid_at'] != null;
+    final isConfirmed =
+        status == 'confirmed' || status == 'paid' || item['confirmed_at'] != null;
 
-    Color statusColor;
-    String statusLabel;
-    if (isPaid) {
-      statusColor = colors.successStrong;
-      statusLabel = "To'landi";
-    } else if (isApproved) {
-      statusColor = colors.accentSub;
-      statusLabel = 'Tasdiqlandi';
-    } else {
-      statusColor = colors.textSoft;
-      statusLabel = 'Kutilmoqda';
-    }
+    final initial = username.isNotEmpty ? username[0].toUpperCase() : '?';
+    final avatarBgColor = _avatarColor(username);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
@@ -331,64 +322,76 @@ class _RequestCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: colors.backgroundElevation3,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  initial,
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    color: avatarBgColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     InfoRow(
                       colors: colors,
-                      label: 'Loyiha: ',
-                      value: projectTitle,
+                      label: 'Ism sharifi:  ',
+                      value: username,
                       valueBold: true,
                     ),
                     const SizedBox(height: 2),
                     InfoRow(
                       colors: colors,
-                      label: 'Xarajat turi: ',
-                      value: categoryTitle,
+                      label: 'Loyiha:  ',
+                      value: projectTitle,
                       valueBold: true,
                     ),
                   ],
                 ),
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  statusLabel,
-                  style: TextStyle(
-                    fontFamily: 'Manrope',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: statusColor,
-                  ),
-                ),
-              ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
+          InfoRow(
+            colors: colors,
+            label: 'Xarajat turi:  ',
+            value: categoryTitle,
+            valueBold: true,
+          ),
+          const SizedBox(height: 4),
+          InfoRow(
+            colors: colors,
+            label: 'Summasi:  ',
+            value: amount,
+            valueBold: true,
+          ),
+          const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(
-                child: InfoRow(
-                  colors: colors,
-                  label: 'Summa: ',
-                  value: amount,
-                  valueBold: true,
-                ),
+              _CheckRow(
+                label: "To'lov yuborildi:",
+                checked: isPaid,
+                colors: colors,
               ),
-              Text(
-                createdAt,
-                style: TextStyle(
-                  fontFamily: 'Manrope',
-                  fontSize: 11,
-                  color: colors.textSoft,
-                ),
+              const Spacer(),
+              _CheckRow(
+                label: 'Qabul qilindi:',
+                checked: isConfirmed,
+                colors: colors,
               ),
             ],
           ),
@@ -397,3 +400,47 @@ class _RequestCard extends StatelessWidget {
     );
   }
 }
+
+class _CheckRow extends StatelessWidget {
+  final String label;
+  final bool checked;
+  final AppColors colors;
+
+  const _CheckRow({
+    required this.label,
+    required this.checked,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Manrope',
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: colors.textSub,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: checked ? colors.successStrong : colors.backgroundElevation2,
+            borderRadius: BorderRadius.circular(6),
+            border: checked ? null : Border.all(color: colors.strokeStrong),
+          ),
+          child: checked
+              ? Icon(Icons.check_rounded, color: colors.white, size: 16)
+              : null,
+        ),
+      ],
+    );
+  }
+}
+

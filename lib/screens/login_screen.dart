@@ -138,7 +138,6 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  width: 350,
                   height: 56,
                   child: Text(
                     "Raqamli boshqaruv tizimiga xush kelibsiz",
@@ -146,22 +145,21 @@ class _LoginScreenState extends State<LoginScreen> {
                       fontFamily: "Manrope",
                       height: 28 / 24,
                       fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.1,
                       color: colors.textStrong,
                     ),
                   ),
                 ),
                 const SizedBox(height: 8),
                 SizedBox(
-                  width: 350,
                   height: 48,
                   child: Text(
                     "Loyihalar, vazifalar va moliyani bitta platformada boshqaring",
                     style: TextStyle(
                       fontSize: 15,
                       fontFamily: "Manrope",
-                      color: colors.textSub,
+                      color: colors.textStrong,
                       fontWeight: FontWeight.w500,
                       height: 24 / 15,
                       letterSpacing: 0,

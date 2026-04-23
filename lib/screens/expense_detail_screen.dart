@@ -1,5 +1,6 @@
 import 'package:dcmanagement/api/api.dart';
 import 'package:dcmanagement/colors/app_colors.dart';
+import 'package:dcmanagement/screens/expense_request_edit_screen.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:dcmanagement/services/role_service.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +8,8 @@ import 'package:intl/intl.dart';
 
 class ExpenseDetailScreen extends StatefulWidget {
   final int id;
-  const ExpenseDetailScreen({super.key, required this.id});
+  final bool canDelete;
+  const ExpenseDetailScreen({super.key, required this.id, this.canDelete = false});
 
   @override
   State<ExpenseDetailScreen> createState() => _ExpenseDetailScreenState();
@@ -70,11 +72,38 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
     }
   }
 
-  Future<void> _showConfirmModal(AppColors colors) async {
-    await showModalBottomSheet(
+  Future<void> _deleteRequest() async {
+    try {
+      final token = await _auth.getToken();
+      if (token == null) throw Exception('Token topilmadi');
+      await _api.deleteExpenseRequest(token, widget.id);
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString(),
+              style: const TextStyle(fontFamily: 'Manrope')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _showDeleteModal(AppColors colors) async {
+    final confirmed = await showDialog<bool>(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      builder: (ctx) => _DeleteModal(colors: colors),
+    );
+    if (confirmed == true && mounted) await _deleteRequest();
+  }
+
+  Future<void> _showConfirmModal(AppColors colors) async {
+    await showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (ctx) => _ConfirmModal(
         colors: colors,
         onConfirm: () async {
@@ -120,7 +149,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          "Foydalanuvchining ma'lumotlari",
+          "So'rov ma'lumotlari",
           style: TextStyle(
             fontFamily: 'Manrope',
             fontSize: 16,
@@ -129,6 +158,13 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          if (widget.canDelete)
+            IconButton(
+              icon: Icon(Icons.close_rounded, color: colors.errorSub),
+              onPressed: () => _showDeleteModal(colors),
+            ),
+        ],
       ),
       body: _buildBody(colors),
       bottomNavigationBar: _buildBottomBar(colors),
@@ -137,6 +173,58 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
 
   Widget? _buildBottomBar(AppColors colors) {
     if (_loading || _error != null || _data == null) return null;
+
+    final status = _data!['status'] as String? ?? 'pending';
+    final isPaid = status == 'paid' || _data!['paid_at'] != null;
+    final isConfirmed = status == 'confirmed' || status == 'paid' ||
+        _data!['confirmed_at'] != null;
+
+    // Worker's own request panel
+    if (widget.canDelete) {
+      final isDone = isPaid && isConfirmed;
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: isDone
+                  ? null
+                  : () async {
+                      final result = await Navigator.of(context).push<bool>(
+                        MaterialPageRoute(
+                          builder: (_) => ExpenseRequestEditScreen(
+                              initialData: _data!),
+                        ),
+                      );
+                      if (result == true && mounted) _load();
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    isDone ? colors.successStrong : colors.accentSub,
+                foregroundColor: colors.white,
+                disabledBackgroundColor: colors.successStrong,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+              ),
+              child: Text(
+                isDone ? 'Tasdiqlangan' : 'Tahrirlash',
+                style: const TextStyle(
+                  fontFamily: 'Manrope',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Manager confirm panel
     if (!_isManager) return null;
     if (_confirmed) return null;
 
@@ -153,8 +241,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
               foregroundColor: colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+                  borderRadius: BorderRadius.circular(16)),
             ),
             child: const Text(
               'Tasdiqlash',
@@ -219,12 +306,24 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
     if (_data == null) return const SizedBox();
 
     final user = _data!['user_info'] as Map<String, dynamic>? ?? {};
-    final project = _data!['project_info'] as Map<String, dynamic>? ?? {};
     final category =
         _data!['expense_category_info'] as Map<String, dynamic>? ?? {};
     final avatarUrl = user['avatar'] as String?;
     final username = user['username'] as String? ?? '—';
     final initial = username.isNotEmpty ? username[0].toUpperCase() : '?';
+
+    const typeMap = {
+      'withdrawal': "Mablag' chiqarish",
+      'expense': 'Xarajat',
+      'income': 'Daromad',
+    };
+    final type = _data!['type'] as String? ?? '';
+    final toifa = typeMap[type] ?? type;
+
+    final status = _data!['status'] as String? ?? 'pending';
+    final isPaid = status == 'paid' || _data!['paid_at'] != null;
+    final isConfirmed =
+        status == 'confirmed' || status == 'paid' || _data!['confirmed_at'] != null;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
@@ -247,7 +346,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
                   ? Image.network(
                       avatarUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (context2, err, st) =>
+                      errorBuilder: (_, __, ___) =>
                           _InitialAvatar(initial: initial, colors: colors),
                     )
                   : _InitialAvatar(initial: initial, colors: colors),
@@ -256,22 +355,31 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
 
           _InfoField(label: 'Ism Sharifi', value: username, colors: colors),
           const SizedBox(height: 12),
-          _InfoField(
-              label: 'Loyiha',
-              value: project['title'] as String? ?? '—',
-              colors: colors),
-          const SizedBox(height: 12),
-          _InfoField(
-              label: 'Xarajat turi',
-              value: category['title'] as String? ?? '—',
-              colors: colors),
+          Row(
+            children: [
+              Expanded(
+                child: _InfoField(
+                  label: 'Xarajat turi',
+                  value: category['title'] as String? ?? '—',
+                  colors: colors,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _InfoField(
+                  label: 'Toifa',
+                  value: toifa.isEmpty ? '—' : toifa,
+                  colors: colors,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
           _InfoField(
               label: 'Summa',
               value: _formatAmount(_data!['amount']),
               colors: colors),
           const SizedBox(height: 12),
-
           Row(
             children: [
               Expanded(
@@ -297,6 +405,22 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
             value: _formatDate(_data!['confirmed_at'] as String?),
             colors: colors,
           ),
+          const SizedBox(height: 20),
+          _StatusRow(
+            label: "To'lov yuborildi:",
+            checked: isPaid,
+            checkedLabel: 'Tasdiqlangan',
+            uncheckedLabel: 'Tasdiqlanmagan',
+            colors: colors,
+          ),
+          const SizedBox(height: 12),
+          _StatusRow(
+            label: 'Qabul qilindi:',
+            checked: isConfirmed,
+            checkedLabel: 'Tasdiqlangan',
+            uncheckedLabel: 'Tasdiqlash',
+            colors: colors,
+          ),
         ],
       ),
     );
@@ -313,8 +437,10 @@ class _ConfirmModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
       decoration: BoxDecoration(
         color: colors.backgroundElevation1,
@@ -427,6 +553,188 @@ class _ConfirmModal extends StatelessWidget {
           ),
         ],
       ),
+      ),
+    );
+  }
+}
+
+// ── Delete Modal ─────────────────────────────────────────────────────────────
+
+class _DeleteModal extends StatelessWidget {
+  final AppColors colors;
+  const _DeleteModal({required this.colors});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+        decoration: BoxDecoration(
+          color: colors.backgroundElevation1,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: colors.errorSub.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(Icons.delete_outline_rounded,
+                  color: colors.errorSub, size: 28),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              "So'rovni o'chirish",
+              style: TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: colors.textStrong,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Bu so'rov o'chiriladi va uni qayta tiklash mumkin bo'lmaydi",
+              style: TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: colors.textSub,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).pop(false),
+                    child: Container(
+                      height: 52,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: colors.strokeSub),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.close_rounded,
+                              color: colors.textSub, size: 18),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Bekor qilish',
+                            style: TextStyle(
+                              fontFamily: 'Manrope',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: colors.textSub,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).pop(true),
+                    child: Container(
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: colors.errorSub,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.delete_rounded,
+                              color: colors.white, size: 18),
+                          const SizedBox(width: 6),
+                          Text(
+                            "O'chirish",
+                            style: TextStyle(
+                              fontFamily: 'Manrope',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Status Row ────────────────────────────────────────────────────────────────
+
+class _StatusRow extends StatelessWidget {
+  final String label;
+  final bool checked;
+  final String checkedLabel;
+  final String uncheckedLabel;
+  final AppColors colors;
+
+  const _StatusRow({
+    required this.label,
+    required this.checked,
+    required this.checkedLabel,
+    required this.uncheckedLabel,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Manrope',
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: colors.textSub,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          checked ? checkedLabel : uncheckedLabel,
+          style: TextStyle(
+            fontFamily: 'Manrope',
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: checked ? colors.successStrong : colors.textStrong,
+          ),
+        ),
+        const Spacer(),
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: checked ? colors.successStrong : colors.backgroundElevation2,
+            borderRadius: BorderRadius.circular(7),
+            border: checked ? null : Border.all(color: colors.strokeStrong),
+          ),
+          child: checked
+              ? Icon(Icons.check_rounded, color: colors.white, size: 18)
+              : null,
+        ),
+      ],
     );
   }
 }

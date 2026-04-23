@@ -202,7 +202,7 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getMyExpenseRequests(String token) async {
     final response = await _dio.get(
       'expense-request/',
-      queryParameters: {'my_request': 'true'},
+      queryParameters: {'my_requests': 'true'},
       options: _auth(token),
     );
     final body = response.data as Map<String, dynamic>;
@@ -263,6 +263,42 @@ class ApiService {
     );
     final body = response.data as Map<String, dynamic>;
     _unwrap(body);
+  }
+
+  Future<void> payExpenseRequest(String token, int id) async {
+    final response = await _dio.post(
+      'expense-request/$id/pay/',
+      options: _auth(token),
+    );
+    final body = response.data as Map<String, dynamic>;
+    _unwrap(body);
+  }
+
+  Future<Map<String, dynamic>> updateExpenseRequest(
+      String token, int id, Map<String, dynamic> data) async {
+    final response = await _dio.patch(
+      'expense-request/$id/',
+      data: data,
+      options: _auth(token),
+    );
+    final body = response.data as Map<String, dynamic>;
+    return _unwrap(body) as Map<String, dynamic>;
+  }
+
+  Future<void> deleteExpenseRequest(String token, int id) async {
+    final response = await _dio.delete(
+      'expense-request/$id/',
+      options: _auth(token),
+    );
+    if (response.statusCode != null &&
+        response.statusCode! >= 200 &&
+        response.statusCode! < 300) {
+      return;
+    }
+    final body = response.data;
+    if (body is Map<String, dynamic>) {
+      _unwrap(body);
+    }
   }
 
   Future<void> createExpenseRequest(
