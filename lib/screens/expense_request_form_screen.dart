@@ -25,12 +25,19 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
 
   Map<String, dynamic>? _selectedProject;
   Map<String, dynamic>? _selectedCategory;
+  _Option? _selectedToifa;
   _Option? _selectedPayment;
 
   bool _loadingDropdowns = true;
   bool _submitting = false;
   bool _success = false;
   String? _submitError;
+
+  static const _toifaOptions = [
+    _Option(value: 'withdrawal', label: "Mablag' chiqarish"),
+    _Option(value: 'expense', label: 'Xarajat'),
+    _Option(value: 'income', label: 'Daromad'),
+  ];
 
   static const _paymentOptions = [
     _Option(value: 'cash', label: 'Naqd pul'),
@@ -80,6 +87,7 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
 
     if (_selectedProject == null ||
         _selectedCategory == null ||
+        _selectedToifa == null ||
         amount.isEmpty ||
         reason.isEmpty ||
         _selectedPayment == null) {
@@ -103,7 +111,7 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
       if (token == null) throw Exception('Token topilmadi');
 
       await _api.createExpenseRequest(token, {
-        'type': 'withdrawal',
+        'type': _selectedToifa!.value,
         'project': _selectedProject!['id'],
         'expense_category': _selectedCategory!['id'],
         'amount': amount,
@@ -191,10 +199,11 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
       children: [
         // ── Header ──────────────────────────────────────────────────────────
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+          child: Stack(
+            alignment: Alignment.center,
             children: [
-              Expanded(
+              Center(
                 child: Text(
                   "So'rov yuborish",
                   style: TextStyle(
@@ -205,23 +214,21 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
                   ),
                 ),
               ),
-              IconButton(
-                onPressed: () => context.pop(false),
-                icon: Container(
-                  width: 36,
-                  height: 36,
-                  child: Icon(
-                    Icons.close,
+              Align(
+                alignment: Alignment.centerRight,
+                child: IconButton(
+                  onPressed: () => context.pop(false),
+                  icon: Icon(
+                    Icons.close_rounded,
                     size: 20,
-                    weight: 900,
                     color: colors.iconSub,
                   ),
+                  padding: EdgeInsets.zero,
                 ),
               ),
             ],
           ),
         ),
-
 
         // ── Scrollable fields ────────────────────────────────────────────────
         Expanded(
@@ -234,10 +241,10 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _label('Loyiha *', colors),
+                      _label('Loyiha uchun', colors),
                       const SizedBox(height: 6),
                       _FloatingDropdown(
-                        placeholder: 'Loyihani tanlang',
+                        placeholder: 'Loyiha tanlang',
                         value: _selectedProject?['title'] as String?,
                         items: _projects,
                         selectedId: _selectedProject?['id'] as int?,
@@ -248,7 +255,7 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      _label('Xarajat turi *', colors),
+                      _label('Xarajat turi', colors),
                       const SizedBox(height: 6),
                       _FloatingDropdown(
                         placeholder: 'Xarajat turini tanlang',
@@ -262,10 +269,44 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      _label("To'lov usuli *", colors),
+                      _label('Toifa', colors),
                       const SizedBox(height: 6),
                       _PaymentDropdown(
-                        placeholder: "To'lov usulini tanlang",
+                        placeholder: 'Biror narsa uchun',
+                        options: _toifaOptions,
+                        selected: _selectedToifa,
+                        colors: colors,
+                        onSelect: (opt) => setState(() => _selectedToifa = opt),
+                        onClear: () => setState(() => _selectedToifa = null),
+                      ),
+                      const SizedBox(height: 16),
+
+                      _label('Miqdori', colors),
+                      const SizedBox(height: 6),
+                      _textField(
+                        controller: _amountCtrl,
+                        hint: 'Summani kiriting: 0,00',
+                        colors: colors,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      _label('Sababi', colors),
+                      const SizedBox(height: 6),
+                      _textField(
+                        controller: _reasonCtrl,
+                        hint: 'Sababini yozing',
+                        colors: colors,
+                        maxLines: 3,
+                      ),
+                      const SizedBox(height: 16),
+
+                      _label("To'lov turi", colors),
+                      const SizedBox(height: 6),
+                      _PaymentDropdown(
+                        placeholder: "To'lov turini tanlang",
                         options: _paymentOptions,
                         selected: _selectedPayment,
                         colors: colors,
@@ -282,10 +323,10 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
                           });
                         },
                       ),
-                      const SizedBox(height: 16),
 
                       if (_isCard) ...[
-                        _label('Karta raqami *', colors),
+                        const SizedBox(height: 16),
+                        _label('Karta raqami', colors),
                         const SizedBox(height: 6),
                         _textField(
                           controller: _cardCtrl,
@@ -293,29 +334,7 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
                           colors: colors,
                           keyboardType: TextInputType.number,
                         ),
-                        const SizedBox(height: 16),
                       ],
-
-                      _label('Summa *', colors),
-                      const SizedBox(height: 6),
-                      _textField(
-                        controller: _amountCtrl,
-                        hint: '0.00',
-                        colors: colors,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      _label('Sabab *', colors),
-                      const SizedBox(height: 6),
-                      _textField(
-                        controller: _reasonCtrl,
-                        hint: 'Xarajat sababi...',
-                        colors: colors,
-                        maxLines: 3,
-                      ),
 
                       if (_submitError != null) ...[
                         const SizedBox(height: 14),
@@ -381,12 +400,12 @@ class _ExpenseRequestFormScreenState extends State<ExpenseRequestFormScreen> {
                         ),
                       )
                     : const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.check),
+                          Icon(Icons.check_rounded, size: 20),
                           SizedBox(width: 8),
                           Text(
-                            'Yuborish',
+                            "So'rov yuborish",
                             style: TextStyle(
                               fontFamily: 'Manrope',
                               fontWeight: FontWeight.w900,

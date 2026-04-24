@@ -26,6 +26,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
   bool _loading = true;
   String? _error;
   bool _isPaid = false;
+  bool _isConfirmed = false;
 
   @override
   void initState() {
@@ -44,8 +45,8 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
       final data = await _api.getExpenseRequestDetail(token, widget.id);
       setState(() {
         _data = data;
-        _isPaid = (data['status'] as String?) == 'paid' ||
-            data['paid_at'] != null;
+        _isPaid = data['paid_at'] != null;
+        _isConfirmed = data['confirmed_at'] != null;
         _loading = false;
       });
     } catch (e) {
@@ -61,7 +62,27 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
       final token = await _auth.getToken();
       if (token == null) throw Exception('Token topilmadi');
       await _api.payExpenseRequest(token, widget.id);
-      setState(() => _isPaid = true);
+      if (mounted) setState(() => _isPaid = true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString(),
+            style: const TextStyle(fontFamily: 'Manrope'),
+          ),
+          backgroundColor: AppColors.of(context).errorSub,
+        ),
+      );
+    }
+  }
+
+  Future<void> _confirmRequest() async {
+    try {
+      final token = await _auth.getToken();
+      if (token == null) throw Exception('Token topilmadi');
+      await _api.confirmExpenseRequest(token, widget.id);
+      if (mounted) setState(() => _isConfirmed = true);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -110,11 +131,35 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
     await showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.5),
-      builder: (ctx) => _ConfirmModal(
+      builder: (ctx) => _ActionModal(
         colors: colors,
+        title: "To'lovni tasdiqlaysizmi?",
+        subtitle: "To'lov yuborilgandan so'ng bu amalni bekor qilib bo'lmaydi",
+        confirmLabel: 'Tasdiqlash',
+        iconColor: colors.successStrong,
+        icon: Icons.check_circle_outline_rounded,
         onConfirm: () async {
           Navigator.of(ctx).pop();
           await _payRequest();
+        },
+      ),
+    );
+  }
+
+  Future<void> _showWorkerConfirmModal(AppColors colors) async {
+    await showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      builder: (ctx) => _ActionModal(
+        colors: colors,
+        title: "Pulni qabul qildingizmi?",
+        subtitle: "Tasdiqlashdan so'ng bu amalni bekor qilib bo'lmaydi",
+        confirmLabel: 'Ha, qabul qildim',
+        iconColor: colors.successStrong,
+        icon: Icons.check_circle_outline_rounded,
+        onConfirm: () async {
+          Navigator.of(ctx).pop();
+          await _confirmRequest();
         },
       ),
     );
@@ -139,7 +184,6 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
         .replaceAll('.', ',');
   }
 
-  bool get _isManager => RoleService.instance.group == 'manager';
   bool get _canPay =>
       RoleService.instance.group == 'manager' ||
       RoleService.instance.group == 'admin';
@@ -147,6 +191,9 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+
+    // X tugma faqat o'z so'rovi pending bo'lganda ko'rinadi
+    final showDelete = widget.canDelete && !_isPaid && !_isConfirmed;
 
     return Scaffold(
       backgroundColor: colors.backgroundBase,
@@ -168,7 +215,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
         ),
         centerTitle: true,
         actions: [
-          if (widget.canDelete)
+          if (showDelete)
             IconButton(
               icon: Icon(Icons.close_rounded, color: colors.errorSub),
               onPressed: () => _showDeleteModal(colors),
@@ -183,15 +230,10 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
   Widget? _buildBottomBar(AppColors colors) {
     if (_loading || _error != null || _data == null) return null;
 
-    final status = _data!['status'] as String? ?? 'pending';
-    final isConfirmed =
-        status == 'confirmed' ||
-        status == 'paid' ||
-        _data!['confirmed_at'] != null;
-
-    // Worker's own request panel
+    // ── O'z so'rovi (canDelete=true) ────────────────────────────────────────
     if (widget.canDelete) {
-      if (isConfirmed) {
+      // Ikkalasi ham tasdiqlangan → disabled yashil "To'langan"
+      if (_isConfirmed) {
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -223,6 +265,42 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
           ),
         );
       }
+
+      // Admin to'ladi, lekin ishchi hali tasdiqlmagan → yashil "Tasdiqlash"
+      if (_isPaid) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: () => _showWorkerConfirmModal(colors),
+                icon: Icon(Icons.check_rounded, color: colors.white, size: 20),
+                label: Text(
+                  'Tasdiqlash',
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colors.successStrong,
+                  foregroundColor: colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      // Pending → "Tahrirlash"
       return SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -262,10 +340,49 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
       );
     }
 
-    // Manager / superadmin pay panel
+    // ── Admin / Manager ─────────────────────────────────────────────────────
     if (!_canPay) return null;
+
+    // Ikkalasi ham tasdiqlangan → outline disabled "Tasdiqlangan"
+    if (_isConfirmed) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: OutlinedButton.icon(
+              onPressed: null,
+              icon: Icon(
+                Icons.check_rounded,
+                color: colors.successStrong,
+                size: 20,
+              ),
+              label: Text(
+                'Tasdiqlangan',
+                style: TextStyle(
+                  fontFamily: 'Manrope',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: colors.successStrong,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: colors.successStrong, width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Admin to'lagan, ishchi hali tasdiqlamagan → hech narsa ko'rsatmaydi
     if (_isPaid) return null;
 
+    // Hali to'lanmagan → yashil "Tasdiqlash" (pay)
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -309,11 +426,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.error_outline_rounded,
-                color: colors.errorSub,
-                size: 48,
-              ),
+              Icon(Icons.error_outline_rounded, color: colors.errorSub, size: 48),
               const SizedBox(height: 12),
               Text(
                 _error!,
@@ -365,13 +478,6 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
     final type = _data!['type'] as String? ?? '';
     final toifa = typeMap[type] ?? type;
 
-    final status = _data!['status'] as String? ?? 'pending';
-    final isPaid = status == 'paid' || _data!['paid_at'] != null;
-    final isConfirmed =
-        status == 'confirmed' ||
-        status == 'paid' ||
-        _data!['confirmed_at'] != null;
-
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
       child: Column(
@@ -387,8 +493,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
                 color: colors.backgroundElevation3,
               ),
               clipBehavior: Clip.antiAlias,
-              child:
-                  (avatarUrl != null &&
+              child: (avatarUrl != null &&
                       (avatarUrl.startsWith('http://') ||
                           avatarUrl.startsWith('https://')))
                   ? Image.network(
@@ -457,7 +562,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
           const SizedBox(height: 20),
           _StatusRow(
             label: "To'lov yuborildi:",
-            checked: isPaid,
+            checked: _isPaid,
             checkedLabel: 'Tasdiqlangan',
             uncheckedLabel: 'Tasdiqlanmagan',
             colors: colors,
@@ -465,7 +570,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
           const SizedBox(height: 12),
           _StatusRow(
             label: 'Qabul qilindi:',
-            checked: isConfirmed,
+            checked: _isConfirmed,
             checkedLabel: 'Tasdiqlangan',
             uncheckedLabel: 'Tasdiqlash',
             colors: colors,
@@ -476,13 +581,26 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
   }
 }
 
-// ── Confirm Modal ─────────────────────────────────────────────────────────────
+// ── Action Modal (pay yoki confirm uchun) ─────────────────────────────────────
 
-class _ConfirmModal extends StatelessWidget {
+class _ActionModal extends StatelessWidget {
   final AppColors colors;
+  final String title;
+  final String subtitle;
+  final String confirmLabel;
+  final IconData icon;
+  final Color iconColor;
   final VoidCallback onConfirm;
 
-  const _ConfirmModal({required this.colors, required this.onConfirm});
+  const _ActionModal({
+    required this.colors,
+    required this.title,
+    required this.subtitle,
+    required this.confirmLabel,
+    required this.icon,
+    required this.iconColor,
+    required this.onConfirm,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -502,18 +620,14 @@ class _ConfirmModal extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: colors.successStrong.withValues(alpha: 0.12),
+                color: iconColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(
-                Icons.check_circle_outline_rounded,
-                color: colors.successStrong,
-                size: 26,
-              ),
+              child: Icon(icon, color: iconColor, size: 26),
             ),
             const SizedBox(height: 16),
             Text(
-              "To'lovni tasdiqlaysizmi?",
+              title,
               style: TextStyle(
                 fontFamily: 'Manrope',
                 fontSize: 18,
@@ -524,7 +638,7 @@ class _ConfirmModal extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              "To'lov yuborilgandan so'ng bu amalni bekor qilib bo'lmaydi",
+              subtitle,
               style: TextStyle(
                 fontFamily: 'Manrope',
                 fontSize: 13,
@@ -536,25 +650,20 @@ class _ConfirmModal extends StatelessWidget {
             const SizedBox(height: 24),
             Row(
               children: [
-                // Bekor qilish
                 Expanded(
                   child: GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
                     child: Container(
                       height: 52,
                       decoration: BoxDecoration(
-                        color: Colors.transparent,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: colors.strokeSub),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.close_rounded,
-                            color: colors.textSub,
-                            size: 18,
-                          ),
+                          Icon(Icons.close_rounded,
+                              color: colors.textSub, size: 18),
                           const SizedBox(width: 6),
                           Text(
                             'Bekor qilish',
@@ -571,35 +680,25 @@ class _ConfirmModal extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Tasdiqlash
                 Expanded(
                   child: GestureDetector(
                     onTap: onConfirm,
                     child: Container(
                       height: 52,
                       decoration: BoxDecoration(
-                        color: colors.successStrong,
+                        color: iconColor,
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.check_rounded,
+                      child: Center(
+                        child: Text(
+                          confirmLabel,
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
                             color: colors.white,
-                            size: 18,
                           ),
-                          SizedBox(width: 6),
-                          Text(
-                            'Tasdiqlash',
-                            style: TextStyle(
-                              fontFamily: 'Manrope',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: colors.white,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -635,7 +734,7 @@ class _DeleteModal extends StatelessWidget {
           children: [
             const SizedBox(height: 16),
             Text(
-              "So‘rovni bekor qilish",
+              "So'rovni bekor qilish",
               style: TextStyle(
                 fontFamily: 'Manrope',
                 fontSize: 19,
@@ -646,7 +745,7 @@ class _DeleteModal extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              "Bu so'rov o'chiriladi va uni qayta tiklash mumkin bo'lmaydi",
+              "Ushbu so'rovni bekor qilmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi",
               style: TextStyle(
                 fontFamily: 'Manrope',
                 fontSize: 13,
@@ -670,11 +769,8 @@ class _DeleteModal extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.arrow_back,
-                            color: colors.textSub,
-                            size: 18,
-                          ),
+                          Icon(Icons.arrow_back,
+                              color: colors.textSub, size: 18),
                           const SizedBox(width: 6),
                           Text(
                             'Orqaga',
@@ -700,19 +796,16 @@ class _DeleteModal extends StatelessWidget {
                         color: colors.errorSub,
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "So‘rovni bekor qilish",
-                            style: TextStyle(
-                              fontFamily: 'Manrope',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: colors.white,
-                            ),
+                      child: Center(
+                        child: Text(
+                          "So'rovni bekor qilish",
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: colors.white,
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -771,7 +864,8 @@ class _StatusRow extends StatelessWidget {
           width: 28,
           height: 28,
           decoration: BoxDecoration(
-            color: checked ? colors.successStrong : colors.backgroundElevation2,
+            color:
+                checked ? colors.successStrong : colors.backgroundElevation2,
             borderRadius: BorderRadius.circular(7),
             border: checked ? null : Border.all(color: colors.strokeStrong),
           ),
@@ -793,16 +887,16 @@ class _InitialAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-    child: Text(
-      initial,
-      style: TextStyle(
-        fontFamily: 'Manrope',
-        fontWeight: FontWeight.w900,
-        fontSize: 32,
-        color: colors.accentSub,
-      ),
-    ),
-  );
+        child: Text(
+          initial,
+          style: TextStyle(
+            fontFamily: 'Manrope',
+            fontWeight: FontWeight.w900,
+            fontSize: 32,
+            color: colors.accentSub,
+          ),
+        ),
+      );
 }
 
 class _InfoField extends StatelessWidget {
@@ -817,36 +911,36 @@ class _InfoField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        label,
-        style: TextStyle(
-          fontFamily: 'Manrope',
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: colors.textSub,
-        ),
-      ),
-      const SizedBox(height: 6),
-      Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        decoration: BoxDecoration(
-          color: colors.backgroundElevation1,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colors.strokeSub),
-        ),
-        child: Text(
-          value,
-          style: TextStyle(
-            fontFamily: 'Manrope',
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: colors.textStrong,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Manrope',
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: colors.textSub,
+            ),
           ),
-        ),
-      ),
-    ],
-  );
+          const SizedBox(height: 6),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              color: colors.backgroundElevation1,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: colors.strokeSub),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: colors.textStrong,
+              ),
+            ),
+          ),
+        ],
+      );
 }
