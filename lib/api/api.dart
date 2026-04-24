@@ -336,6 +336,87 @@ class ApiService {
     }
   }
 
+  // ── Tasks ────────────────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getTasks(
+    String token, {
+    String? status,
+    int? projectId,
+  }) async {
+    final response = await _dio.get(
+      'tasks/',
+      queryParameters: {
+        if (status != null) 'status': status,
+        if (projectId != null) 'project': projectId,
+      },
+      options: _auth(token),
+    );
+    final body = response.data as Map<String, dynamic>;
+    final data = _unwrap(body);
+    if (data is Map<String, dynamic>) {
+      return (data['results'] as List? ?? []).cast<Map<String, dynamic>>();
+    }
+    if (data is List) return data.cast<Map<String, dynamic>>();
+    return [];
+  }
+
+  Future<Map<String, dynamic>> getTaskDetail(String token, int id) async {
+    final response = await _dio.get('tasks/$id/', options: _auth(token));
+    final body = response.data as Map<String, dynamic>;
+    return _unwrap(body) as Map<String, dynamic>;
+  }
+
+  Future<void> createTask(String token, Map<String, dynamic> data) async {
+    final response = await _dio.post(
+      'tasks/',
+      data: data,
+      options: _auth(token),
+    );
+    final body = response.data as Map<String, dynamic>;
+    _unwrap(body);
+  }
+
+  Future<void> updateTask(
+      String token, int id, Map<String, dynamic> data) async {
+    final response = await _dio.patch(
+      'tasks/$id/',
+      data: data,
+      options: _auth(token),
+    );
+    final body = response.data as Map<String, dynamic>;
+    _unwrap(body);
+  }
+
+  Future<void> deleteTask(String token, int id) async {
+    final response =
+        await _dio.delete('tasks/$id/', options: _auth(token));
+    if (response.statusCode != null &&
+        response.statusCode! >= 200 &&
+        response.statusCode! < 300) return;
+    final body = response.data;
+    if (body is Map<String, dynamic>) _unwrap(body);
+  }
+
+  // ── Meetings ─────────────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getMeetings(
+    String token, {
+    bool myMeetings = false,
+  }) async {
+    final response = await _dio.get(
+      'meetings/',
+      queryParameters: myMeetings ? {'my_meetings': 'true'} : null,
+      options: _auth(token),
+    );
+    final body = response.data as Map<String, dynamic>;
+    final data = _unwrap(body);
+    if (data is Map<String, dynamic>) {
+      return (data['results'] as List? ?? []).cast<Map<String, dynamic>>();
+    }
+    if (data is List) return data.cast<Map<String, dynamic>>();
+    return [];
+  }
+
   // ── Ledger/History ──────────────────────────────────────────────────────────
 
   Future<List<LedgerModel>> getLedgerEntries(String token) async {

@@ -1,6 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:dcmanagement/app_config.dart';
 import 'package:dcmanagement/screens/expense_request_form_screen.dart';
 import 'package:dcmanagement/screens/my_requests_screen.dart';
+import 'package:dcmanagement/screens/project_list_screen.dart';
+import 'package:dcmanagement/screens/task_list_screen.dart';
 import 'package:dcmanagement/screens/reports_screen.dart';
 import 'package:dcmanagement/screens/worker_my_requests_screen.dart';
 import 'package:dcmanagement/screens/expense_requests_screen.dart';
@@ -59,6 +62,32 @@ final appRouter = GoRouter(
       path: '/users/:id',
       builder: (context, state) =>
           UserDetailScreen(userId: int.parse(state.pathParameters['id']!)),
+    ),
+
+    // Projects sub screens
+    GoRoute(
+      path: '/projects/list',
+      builder: (_, __) => const ProjectListScreen(),
+    ),
+    GoRoute(
+      path: '/projects/tasks',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        final project = extra?['project'] as Map<String, dynamic>?;
+        return TaskListScreen(project: project);
+      },
+    ),
+    GoRoute(
+      path: '/projects/meetings',
+      builder: (_, __) => const Scaffold(
+        body: Center(child: Text("Yig'ilishlar — tez orada")),
+      ),
+    ),
+    GoRoute(
+      path: '/projects/my-meetings',
+      builder: (_, __) => const Scaffold(
+        body: Center(child: Text("Mening yig'ilishlarim — tez orada")),
+      ),
     ),
 
     // Finance sub screens
