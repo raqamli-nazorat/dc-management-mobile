@@ -4,6 +4,7 @@ import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:dcmanagement/services/role_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -62,6 +63,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _onChanged() => setState(() {});
 
+  String _formatThrottleMmSs(int seconds) {
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
   Future<void> _onLoginPressed() async {
     if (_throttleSeconds > 0) return;
 
@@ -79,7 +86,10 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final (success, throttleSecs) = await _authService.signIn(username, password);
+      final (success, throttleSecs) = await _authService.signIn(
+        username,
+        password,
+      );
       if (!mounted) return;
 
       if (throttleSecs != null && throttleSecs > 0) {
@@ -97,15 +107,20 @@ class _LoginScreenState extends State<LoginScreen> {
             () => _errorMessage =
                 "Rol topilmadi. Administrator bilan bog'laning.",
           );
-        } else if (roles.length == 1) {
-          await RoleService.instance.setRole(roles[0]);
-          if (!mounted) return;
-          context.go('/home');
         } else {
-          context.go('/select-role');
+          if (roles.length == 1) {
+            await RoleService.instance.setRole(roles[0]);
+          } else {
+            await RoleService.instance.clearSelectedRole();
+          }
+          if (!mounted) return;
+          context.go('/pin');
         }
       } else {
-        setState(() => _errorMessage = "Login yoki parol noto'g'ri");
+        setState(
+          () => _errorMessage =
+              "Login yo‘li yoki parol noto‘g‘ri kiritilgan. Iltimos, to‘g‘ri kiritilganiga ishonch hosil qiling.",
+        );
       }
     } catch (e) {
       setState(
@@ -140,33 +155,27 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
-                  height: 56,
-                  child: Text(
-                    "Raqamli boshqaruv tizimiga xush kelibsiz",
-                    style: TextStyle(
-                      fontFamily: "Manrope",
-                      height: 28 / 24,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.1,
-                      color: colors.textStrong,
-                    ),
+                Text(
+                  "Raqamli boshqaruv tizimiga xush kelibsiz",
+                  style: TextStyle(
+                    fontFamily: "Manrope",
+                    height: 28 / 24,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.1,
+                    color: colors.textStrong,
                   ),
                 ),
                 const SizedBox(height: 8),
-                SizedBox(
-                  height: 48,
-                  child: Text(
-                    "Loyihalar, vazifalar va moliyani bitta platformada boshqaring",
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontFamily: "Manrope",
-                      color: colors.textStrong,
-                      fontWeight: FontWeight.w500,
-                      height: 24 / 15,
-                      letterSpacing: 0,
-                    ),
+                Text(
+                  "Loyihalar, vazifalar va moliyani bitta platformada boshqaring",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontFamily: "Manrope",
+                    color: colors.textStrong,
+                    fontWeight: FontWeight.w500,
+                    height: 24 / 15,
+                    letterSpacing: 0,
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -240,32 +249,42 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       if (_throttleSeconds > 0) ...[
                         const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: colors.errorSub.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                                color: colors.errorSub.withValues(alpha: 0.3)),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(LucideIcons.timer,
-                                  color: colors.errorSub, size: 18),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  "Juda ko'p urinish. $_throttleSeconds soniyadan so'ng qayta urinib ko'ring.",
-                                  style: TextStyle(
-                                    color: colors.errorSub,
-                                    fontSize: 13,
-                                    fontFamily: "Manrope",
-                                  ),
-                                ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Kirish vaqtincha bloklandi",
+                              style: TextStyle(
+                                color: colors.errorSub,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: "Manrope",
                               ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text.rich(
+                              TextSpan(
+                                text: "Qayta urinish uchun: ",
+                                style: TextStyle(
+                                  color: colors.errorSoft,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: "Manrope",
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text: _formatThrottleMmSs(_throttleSeconds),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: "Manrope",
+                                      fontSize: 15,
+                                      color: colors.errorSoft,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ] else if (_errorMessage != null) ...[
                         const SizedBox(height: 10),
@@ -282,7 +301,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       // Login button
                       GestureDetector(
-                        onTap: (!_isFormValid || _isLoading || _throttleSeconds > 0)
+                        onTap:
+                            (!_isFormValid ||
+                                _isLoading ||
+                                _throttleSeconds > 0)
                             ? null
                             : _onLoginPressed,
                         child: AnimatedContainer(
@@ -306,14 +328,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   )
                                 : Text(
-                                    _throttleSeconds > 0
-                                        ? "$_throttleSeconds s"
-                                        : "Kirish",
+                                    "Kirish",
                                     style: TextStyle(
                                       fontFamily: "Manrope",
                                       fontSize: 16,
                                       fontWeight: FontWeight.w300,
-                                      color: (_isFormValid && _throttleSeconds == 0)
+                                      color:
+                                          (_isFormValid &&
+                                              _throttleSeconds == 0)
                                           ? colors.textWhite
                                           : colors.textDisabled,
                                     ),
@@ -381,40 +403,47 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       child: TextField(
         controller: _passwordController,
-          obscureText: _isPasswordHidden,
-          style: TextStyle(
+        obscureText: _isPasswordHidden,
+        obscuringCharacter: '*',
+        style: TextStyle(
+          fontFamily: "Manrope",
+          color: colors.textStrong,
+          fontSize: 15,
+        ),
+        decoration: InputDecoration(
+          hintText: "Parol",
+          hintStyle: TextStyle(
             fontFamily: "Manrope",
-            color: colors.textStrong,
+            color: colors.textSoft,
             fontSize: 15,
           ),
-          decoration: InputDecoration(
-            hintText: "Parol",
-            hintStyle: TextStyle(
-              fontFamily: "Manrope",
-              color: colors.textSoft,
-              fontSize: 15,
-            ),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 18,
-            ),
-            suffixIcon: _passwordController.text.isNotEmpty
-                ? IconButton(
-                    icon: Icon(
-                      _isPasswordHidden ? LucideIcons.eyeOff : LucideIcons.eye,
-                      color: colors.iconSoft,
-                      size: 22,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _isPasswordHidden = !_isPasswordHidden;
-                      });
-                    },
-                  )
-                : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 18,
           ),
+          suffixIcon: _passwordController.text.isNotEmpty
+              ? IconButton(
+                  icon: _isPasswordHidden
+                      ? SvgPicture.asset(
+                          'assets/icons/view-off.svg',
+                          width: 22,
+                          height: 22,
+                          colorFilter: ColorFilter.mode(
+                            colors.iconSoft,
+                            BlendMode.srcIn,
+                          ),
+                        )
+                      : Icon(LucideIcons.eye, color: colors.iconSoft, size: 22),
+                  onPressed: () {
+                    setState(() {
+                      _isPasswordHidden = !_isPasswordHidden;
+                    });
+                  },
+                )
+              : null,
         ),
+      ),
     );
   }
 }

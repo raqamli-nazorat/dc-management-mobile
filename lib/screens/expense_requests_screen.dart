@@ -12,6 +12,7 @@ import 'package:dcmanagement/widgets/info_row.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class ExpenseRequestsScreen extends StatefulWidget {
   const ExpenseRequestsScreen({super.key});
@@ -21,6 +22,14 @@ class ExpenseRequestsScreen extends StatefulWidget {
 }
 
 class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
+  /// Ikkala tugma atrofidagi tashqi vertikal margin (toolbar 56 bilan sig‘adi).
+  static const double _appBarActionsOuterMarginV = 7;
+  static const double _appBarActionExtent =
+      kToolbarHeight - _appBarActionsOuterMarginV * 2;
+
+  /// Kartochka ichidagi vertikal zichlik.
+  static const double _appBarActionInnerPadV = 6;
+
   final _api = ApiService();
   final _auth = AuthService();
 
@@ -232,43 +241,102 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                final result = await context.push<bool>(
-                  '/finance/expense-request-form',
-                );
-                if (result == true && mounted) _load();
-              },
-              iconAlignment: IconAlignment.end,
-              label: const Text(
-                "So'rov yuborish",
-                style: TextStyle(
-                  fontFamily: 'Manrope',
-                  fontWeight: FontWeight.w900,
-                  fontSize: 13,
-                ),
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: _appBarActionsOuterMarginV,
               ),
-              icon: Image.asset(
-                'assets/images/money.png',
-                width: 18,
-                height: 18,
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.accentSub,
-                foregroundColor: colors.textWhite,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                height: _appBarActionExtent,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final result = await context.push<bool>(
+                          '/finance/expense-request-form',
+                        );
+                        if (result == true && mounted) _load();
+                      },
+                      iconAlignment: IconAlignment.start,
+                      label: const Text(
+                        "So'rov yuborish",
+                        style: TextStyle(
+                          fontFamily: 'Manrope',
+                          fontWeight: FontWeight.w900,
+                          fontSize: 13,
+                        ),
+                      ),
+                      icon: Image.asset(
+                        'assets/images/money.png',
+                        width: 18,
+                        height: 18,
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.accentSub,
+                        foregroundColor: colors.textWhite,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: _appBarActionInnerPadV,
+                        ),
+                        elevation: 0,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        minimumSize: const Size(0, _appBarActionExtent),
+                        maximumSize: Size.fromHeight(_appBarActionExtent),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      width: _appBarActionExtent,
+                      height: _appBarActionExtent,
+                      child: Material(
+                        color: colors.expenseAppBarFilterSurface,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(color: colors.strokeSub),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: () => _openFilter(colors),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: _appBarActionInnerPadV,
+                            ),
+                            child: Center(
+                              child: SvgPicture.asset(
+                                'assets/icons/notification.svg',
+                                width: 22,
+                                height: 22,
+                                fit: BoxFit.contain,
+                                colorFilter: ColorFilter.mode(
+                                  colors.iconNotify,
+                                  BlendMode.srcIn,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-                elevation: 0,
               ),
             ),
           ),
+          const SizedBox(width: 10),
+
+          // _ActionButton(icon: icon, onTap: onTap, colors: colors)
+          // const SizedBox(width: 10),
+          // IconButton(
+          //   icon: Icon(Icons.filter, color: colors.textStrong),
+          //   onPressed: () => _openFilter(colors),
+          // ),
         ],
       ),
       body: SafeArea(
@@ -276,7 +344,7 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
               child: _searching
                   ? TextField(
                       controller: _searchCtrl,
@@ -330,7 +398,7 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
                             "Xarajat so'rovlari",
                             style: TextStyle(
                               fontFamily: 'Manrope',
-                              fontSize: 22,
+                              fontSize: 17,
                               fontWeight: FontWeight.w900,
                               color: colors.textStrong,
                             ),
@@ -432,22 +500,6 @@ class _ExpenseCard extends StatelessWidget {
 
   const _ExpenseCard({required this.item, required this.colors});
 
-  static const _avatarColors = [
-    Color(0xFF7C6AF7),
-    Color(0xFF526ED3),
-    Color(0xFF3F8FA8),
-    Color(0xFF5A9E6F),
-    Color(0xFFB06B3A),
-    Color(0xFF8F4CA8),
-    Color(0xFFA84C6E),
-    Color(0xFF4C7EA8),
-  ];
-
-  Color _avatarColor(String name) {
-    if (name.isEmpty) return _avatarColors[0];
-    return _avatarColors[name.codeUnitAt(0) % _avatarColors.length];
-  }
-
   String _formatAmount(dynamic raw) {
     final num value = num.tryParse(raw?.toString() ?? '') ?? 0;
     final formatter = NumberFormat('#,##0.00', 'uz_UZ');
@@ -464,15 +516,14 @@ class _ExpenseCard extends StatelessWidget {
     final category =
         item['expense_category_info'] as Map<String, dynamic>? ?? {};
 
-    final username = user['username'] as String? ?? '—';
-    final projectTitle = project['title'] as String? ?? '—';
-    final categoryTitle = category['title'] as String? ?? '—';
+    final username = user['username'] as String? ?? '';
+    final projectTitle = project['title'] as String? ?? '';
+    final categoryTitle = category['title'] as String? ?? '';
     final amount = _formatAmount(item['amount']);
     final status = item['status'] as String? ?? 'pending';
     final isApproved = status == 'confirmed' || status == 'paid';
 
     final initial = username.isNotEmpty ? username[0].toUpperCase() : '?';
-    final avatarColor = _avatarColor(username);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
@@ -492,7 +543,7 @@ class _ExpenseCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: colors.backgroundElevation3,
+                  color: colors.avatarPlaceholder,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 alignment: Alignment.center,
@@ -502,7 +553,7 @@ class _ExpenseCard extends StatelessWidget {
                     fontFamily: 'Manrope',
                     fontWeight: FontWeight.w900,
                     fontSize: 16,
-                    color: colors.iconStrong,
+                    color: colors.textWhite,
                   ),
                 ),
               ),
@@ -515,7 +566,7 @@ class _ExpenseCard extends StatelessWidget {
                       colors: colors,
                       label: 'Ism sharifi:  ',
                       value: username,
-                      valueBold: true,
+                      valueBold: false,
                     ),
                     const SizedBox(height: 2),
                     InfoRow(
@@ -564,11 +615,7 @@ class _ExpenseCard extends StatelessWidget {
                       : Border.all(color: colors.strokeStrong),
                 ),
                 child: isApproved
-                    ? Icon(
-                        Icons.check_rounded,
-                        color: colors.white,
-                        size: 18,
-                      )
+                    ? Icon(Icons.check_rounded, color: colors.white, size: 18)
                     : null,
               ),
             ],

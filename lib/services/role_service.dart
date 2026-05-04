@@ -49,6 +49,13 @@ class RoleService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Bir nechta rol bo‘lganda avvalgi tanlovni tozalash (yangi kirishdan keyin).
+  Future<void> clearSelectedRole() async {
+    _role = null;
+    await StorageService().remove(_key);
+    notifyListeners();
+  }
+
   void clearCache() {
     _role = null;
     notifyListeners();

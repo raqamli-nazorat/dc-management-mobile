@@ -1,9 +1,85 @@
+import 'dart:convert';
+
 import 'package:dcmanagement/models/ledger_model.dart';
 import 'package:dcmanagement/models/user_model.dart';
 import 'package:dcmanagement/services/pin_session.dart';
 import 'package:dcmanagement/services/storage_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+
+/// Har bir API so‘rov/javobini terminalga yozadi (`ApiService` va token refresh Dio).
+class _ApiLoggingInterceptor extends Interceptor {
+  static String _payload(dynamic data) {
+    if (data == null) return 'null';
+    if (data is FormData) {
+      final fieldLines =
+          data.fields.map((e) => '    ${e.key}: ${e.value}').join('\n');
+      final fileLines = data.files
+          .map((e) => '    ${e.key}: file(${e.value.filename})')
+          .join('\n');
+      return 'FormData(\n  fields:\n$fieldLines\n  files:\n$fileLines\n  )';
+    }
+    try {
+      if (data is Map || data is List) {
+        return const JsonEncoder.withIndent('  ').convert(data);
+      }
+    } catch (_) {}
+    return data.toString();
+  }
+
+  static Map<String, dynamic> _headersForLog(Map<String, dynamic> headers) {
+    final out = Map<String, dynamic>.from(headers);
+    final auth = out['Authorization'] ?? out['authorization'];
+    if (auth is String && auth.startsWith('Bearer ')) {
+      out['Authorization'] = 'Bearer <redacted>';
+    }
+    return out;
+  }
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    final buffer = StringBuffer()
+      ..writeln('=== API REQUEST [${options.method}] ${options.uri}');
+    if (options.queryParameters.isNotEmpty) {
+      buffer.writeln('query: ${_payload(options.queryParameters)}');
+    }
+    if (options.data != null) {
+      buffer.writeln('body: ${_payload(options.data)}');
+    }
+    if (options.headers.isNotEmpty) {
+      buffer.writeln('headers: ${_payload(_headersForLog(options.headers))}');
+    }
+    buffer.write('===');
+    debugPrint(buffer.toString());
+    handler.next(options);
+  }
+
+  @override
+  void onResponse(Response response, ResponseInterceptorHandler handler) {
+    debugPrint(
+      '=== API RESPONSE [${response.statusCode}] ${response.requestOptions.uri}\n'
+      'data: ${_payload(response.data)}\n===',
+    );
+    handler.next(response);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    final res = err.response;
+    final buf = StringBuffer()
+      ..writeln(
+        '=== API ERROR [${res?.statusCode}] ${err.requestOptions.uri}',
+      )
+      ..writeln('type: ${err.type}')
+      ..writeln('message: ${err.message}');
+    if (res?.data != null) {
+      buf.writeln('data: ${_payload(res!.data)}');
+    }
+    buf.write('===');
+    debugPrint(buf.toString());
+    handler.next(err);
+  }
+}
 
 /// Thrown when the backend returns success=false.
 class ApiException implements Exception {
@@ -38,6 +114,7 @@ class _TokenRefreshInterceptor extends Interceptor {
             baseUrl: dio.options.baseUrl,
             validateStatus: (s) => s != null && s < 600,
           ));
+          refreshDio.interceptors.add(_ApiLoggingInterceptor());
           final refreshResponse = await refreshDio.post(
             'auth/token/refresh/',
             data: {'refresh': refreshToken},
@@ -92,6 +169,7 @@ class ApiService {
             validateStatus: (status) => status != null && status < 500,
           ),
         ) {
+    _dio.interceptors.add(_ApiLoggingInterceptor());
     _dio.interceptors.add(_TokenRefreshInterceptor(_dio, _storage));
   }
 
@@ -128,25 +206,13 @@ class ApiService {
   // ── Auth ──────────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> login(String username, String password) async {
-    debugPrint('=== LOGIN REQUEST ===');
-    debugPrint('URL: ${_dio.options.baseUrl}auth/login/');
-    debugPrint('Body: { username: "$username", password: "$password" }');
-
     try {
       final response = await _dio.post(
         'auth/login/',
         data: {'username': username, 'password': password},
       );
-      debugPrint('=== LOGIN RESPONSE ===');
-      debugPrint('Status: ${response.statusCode}');
-      debugPrint('Data: ${response.data}');
       return response.data as Map<String, dynamic>;
-    } on DioException catch (e) {
-      debugPrint('=== LOGIN ERROR ===');
-      debugPrint('Type: ${e.type}');
-      debugPrint('Status: ${e.response?.statusCode}');
-      debugPrint('Response data: ${e.response?.data}');
-      debugPrint('Message: ${e.message}');
+    } on DioException {
       rethrow;
     }
   }
@@ -157,9 +223,6 @@ class ApiService {
   /// current user does not have permission.
   Future<List<UserModel>> getUsers(String token) async {
     final response = await _dio.get('users/', options: _auth(token));
-    debugPrint('=== GET USERS RAW ===');
-    debugPrint('Status: ${response.statusCode}');
-    debugPrint('Data: ${response.data}');
     final body = response.data as Map<String, dynamic>;
     final data = _unwrap(body) as Map<String, dynamic>? ?? {};
     final results = data['results'] as List? ?? [];
@@ -315,23 +378,15 @@ class ApiService {
 
   Future<void> createExpenseRequest(
       String token, Map<String, dynamic> data) async {
-    debugPrint('=== CREATE EXPENSE REQUEST ===');
-    debugPrint('Body: $data');
     try {
       final response = await _dio.post(
         'expense-request/',
         data: data,
         options: _auth(token),
       );
-      debugPrint('Status: ${response.statusCode}');
-      debugPrint('Response: ${response.data}');
       final body = response.data as Map<String, dynamic>;
       _unwrap(body);
-    } on DioException catch (e) {
-      debugPrint('DioException: ${e.type}');
-      debugPrint('Status: ${e.response?.statusCode}');
-      debugPrint('Response data: ${e.response?.data}');
-      debugPrint('Message: ${e.message}');
+    } on DioException {
       rethrow;
     }
   }

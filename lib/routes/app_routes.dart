@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:dcmanagement/app_config.dart';
 import 'package:dcmanagement/screens/expense_request_form_screen.dart';
 import 'package:dcmanagement/screens/my_requests_screen.dart';
 import 'package:dcmanagement/screens/project_list_screen.dart';
@@ -20,6 +19,7 @@ import 'package:dcmanagement/screens/user_filter_screen.dart';
 import 'package:dcmanagement/screens/users_scree.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:dcmanagement/services/pin_session.dart';
+import 'package:dcmanagement/services/role_service.dart';
 import 'package:dcmanagement/widgets/scaffils_with_nav.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dcmanagement/screens/login_screen.dart';
@@ -36,11 +36,22 @@ final appRouter = GoRouter(
     final location = state.matchedLocation;
     final onLogin = location == '/login';
     final onPin = location == '/pin';
+    final onSelectRole = location == '/select-role';
 
     if (!loggedIn) return onLogin ? null : '/login';
-    if (!kProduction) return onLogin ? '/home' : null;
-    if (onLogin) return PinSession.instance.verified ? '/home' : '/pin';
-    if (!onPin && !PinSession.instance.verified) return '/pin';
+
+    if (!PinSession.instance.verified) {
+      if (onPin) return null;
+      return '/pin';
+    }
+
+    final roles = await _authService.getUserRoles();
+    if (roles.length > 1 && !RoleService.instance.hasRole) {
+      if (onSelectRole) return null;
+      return '/select-role';
+    }
+
+    if (onLogin || onPin) return '/home';
     return null;
   },
   routes: [
@@ -79,9 +90,8 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/projects/meetings',
-      builder: (_, __) => const Scaffold(
-        body: Center(child: Text("Yig'ilishlar — tez orada")),
-      ),
+      builder: (_, __) =>
+          const Scaffold(body: Center(child: Text("Yig'ilishlar — tez orada"))),
     ),
     GoRoute(
       path: '/projects/my-meetings',
@@ -125,7 +135,10 @@ final appRouter = GoRouter(
         GoRoute(path: '/users', builder: (_, __) => const UsersScreen()),
         GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
         GoRoute(path: '/finance', builder: (_, __) => const FinanceScreen()),
-        GoRoute(path: '/my-requests', builder: (_, __) => const WorkerMyRequestsScreen()),
+        GoRoute(
+          path: '/my-requests',
+          builder: (_, __) => const WorkerMyRequestsScreen(),
+        ),
         GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
       ],
     ),

@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:dcmanagement/colors/app_colors.dart';
 import 'package:dcmanagement/services/auth_service.dart';
 import 'package:dcmanagement/services/pin_session.dart';
+import 'package:dcmanagement/services/role_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class PinScreen extends StatefulWidget {
   const PinScreen({super.key});
@@ -21,6 +23,7 @@ class _PinScreenState extends State<PinScreen>
   bool _pinVisible = false;
   String? _error;
   bool _isApiError = false;
+  bool _pinMismatch = false;
   int? _pinLength;
   int _throttleSeconds = 0;
   Timer? _throttleTimer;
@@ -58,6 +61,7 @@ class _PinScreenState extends State<PinScreen>
       _pin = '';
       _error = null;
       _isApiError = false;
+      _pinMismatch = false;
     });
     _throttleTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) {
@@ -82,6 +86,7 @@ class _PinScreenState extends State<PinScreen>
     if (_isLoading || _throttleSeconds > 0) return;
     if (_pinLength != null && _pin.length >= _pinLength!) return;
     setState(() {
+      _pinMismatch = false;
       _pin += digit;
       _error = null;
       _isApiError = false;
@@ -92,7 +97,15 @@ class _PinScreenState extends State<PinScreen>
   }
 
   void _onDelete() {
-    if (_pin.isEmpty || _isLoading) return;
+    if (_isLoading) return;
+    if (_pinMismatch) {
+      setState(() {
+        _pinMismatch = false;
+        _error = null;
+      });
+      return;
+    }
+    if (_pin.isEmpty) return;
     setState(() => _pin = _pin.substring(0, _pin.length - 1));
   }
 
@@ -103,7 +116,13 @@ class _PinScreenState extends State<PinScreen>
     if (!mounted) return;
     if (success) {
       PinSession.instance.markVerified();
-      context.go('/home');
+      final roles = await _auth.getUserRoles();
+      if (!mounted) return;
+      if (roles.length > 1 && !RoleService.instance.hasRole) {
+        context.go('/select-role');
+      } else {
+        context.go('/home');
+      }
     } else if (throttleSec != null) {
       setState(() => _isLoading = false);
       _startThrottle(throttleSec);
@@ -112,6 +131,7 @@ class _PinScreenState extends State<PinScreen>
       setState(() {
         _isLoading = false;
         _pin = '';
+        _pinMismatch = false;
         _error =
             'Server bilan ulanishda xatolik. Internet aloqasini tekshiring.';
         _isApiError = true;
@@ -121,8 +141,9 @@ class _PinScreenState extends State<PinScreen>
       setState(() {
         _isLoading = false;
         _pin = '';
-        _error = 'PIN noto\'g\'ri. Qayta urinib ko\'ring.';
+        _error = 'PIN-kod noto\'g\'ri';
         _isApiError = false;
+        _pinMismatch = true;
       });
     }
   }
@@ -139,6 +160,62 @@ class _PinScreenState extends State<PinScreen>
   }
 
   bool get _isBlocked => _isLoading || _throttleSeconds > 0;
+
+  List<Widget> _pinIndicatorDots(AppColors colors) {
+    if (_pinMismatch && _pinLength != null) {
+      return List.generate(
+        _pinLength!,
+        (_) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Container(
+            width: 14,
+            height: 14,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: colors.errorSub,
+            ),
+          ),
+        ),
+      );
+    }
+    if (_pinMismatch) {
+      return List.generate(6, (_) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Container(
+            width: 14,
+            height: 14,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: colors.errorSub,
+            ),
+          ),
+        );
+      });
+    }
+    return List.generate(_pin.length, (i) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: _pinVisible
+            ? Text(
+                _pin[i],
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: colors.textStrong,
+                ),
+              )
+            : Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colors.textStrong,
+                ),
+              ),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -159,7 +236,7 @@ class _PinScreenState extends State<PinScreen>
                     'PIN-kodni kiriting',
                     style: TextStyle(
                       fontSize: 26,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w900,
                       color: colors.textStrong,
                       fontFamily: 'Manrope',
                     ),
@@ -169,7 +246,7 @@ class _PinScreenState extends State<PinScreen>
                     'Hisobingizga kirishni tasdiqlash uchun PIN-kodni kiriting',
                     style: TextStyle(
                       fontSize: 15,
-                      color: colors.textSub,
+                      color: colors.textStrong,
                       height: 1.4,
                     ),
                   ),
@@ -179,59 +256,64 @@ class _PinScreenState extends State<PinScreen>
 
             const Spacer(),
 
-            // ── PIN dots (only filled ones shown) ─────────────────────────
+            // ── PIN dots (wrong PIN → full row red + message under dots) ─
             AnimatedBuilder(
               animation: _shakeAnim,
               builder: (_, child) => Transform.translate(
                 offset: Offset(_shakeAnim.value, 0),
                 child: child,
               ),
-              child: SizedBox(
-                height: 40,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(_pin.length, (i) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                          child: _pinVisible
-                              ? Text(
-                                  _pin[i],
-                                  style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w700,
-                                    color: colors.textStrong,
-                                  ),
-                                )
-                              : Container(
-                                  width: 14,
-                                  height: 14,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: colors.textStrong,
-                                  ),
-                                ),
-                        );
-                      }),
-                    ),
-                    Positioned(
-                      right: 24,
-                      child: GestureDetector(
-                        onTap: () =>
-                            setState(() => _pinVisible = !_pinVisible),
-                        child: Icon(
-                          _pinVisible
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                          size: 22,
-                          color: colors.iconSub,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: 40,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: _pinIndicatorDots(colors),
                         ),
+                        Positioned(
+                          right: 24,
+                          child: GestureDetector(
+                            onTap: () =>
+                                setState(() => _pinVisible = !_pinVisible),
+                            child: _pinVisible
+                                ? Icon(
+                                    Icons.visibility_outlined,
+                                    size: 24,
+                                    color: colors.iconSub,
+                                  )
+                                : SvgPicture.asset(
+                                    'assets/icons/view-off.svg',
+                                    width: 24,
+                                    height: 24,
+                                    colorFilter: ColorFilter.mode(
+                                      colors.iconSub,
+                                      BlendMode.srcIn,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_pinMismatch && _error != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _error!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: colors.errorSub,
+                        fontFamily: 'Manrope',
                       ),
                     ),
                   ],
-                ),
+                ],
               ),
             ),
 
@@ -249,69 +331,68 @@ class _PinScreenState extends State<PinScreen>
                         ),
                       )
                     : _throttleSeconds > 0
-                        ? Column(
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Kirish vaqtincha bloklandi',
+                            style: TextStyle(
+                              color: colors.errorSub,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                'Kirish vaqtincha bloklandi',
+                                'Qayta urinish uchun: ',
                                 style: TextStyle(
-                                  color: colors.errorSub,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
+                                  color: colors.textStrong,
+                                  fontSize: 13,
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'Qayta urinish uchun: ',
-                                    style: TextStyle(
-                                      color: colors.textStrong,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  Text(
-                                    _formatTime(_throttleSeconds),
-                                    style: TextStyle(
-                                      color: colors.textStrong,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ],
+                              Text(
+                                _formatTime(_throttleSeconds),
+                                style: TextStyle(
+                                  color: colors.textStrong,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                             ],
-                          )
-                        : _error != null
-                            ? Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 24),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      _isApiError
-                                          ? Icons.wifi_off_rounded
-                                          : Icons.error_outline_rounded,
-                                      size: 15,
-                                      color: colors.errorSub,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Flexible(
-                                      child: Text(
-                                        _error!,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: colors.errorSub,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                          ),
+                        ],
+                      )
+                    : _error != null && !_pinMismatch
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _isApiError
+                                  ? Icons.wifi_off_rounded
+                                  : Icons.error_outline_rounded,
+                              size: 15,
+                              color: colors.errorSub,
+                            ),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                _error!,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: colors.errorSub,
+                                  fontSize: 13,
                                 ),
-                              )
-                            : const SizedBox.shrink(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : const SizedBox.shrink(),
               ),
             ),
 
@@ -369,10 +450,12 @@ class _Keypad extends StatelessWidget {
                     child: _KeyButton(
                       colors: colors,
                       isLogout: true,
+                      isTransparent: true,
                       onTap: onLogout,
-                      child: Icon(
-                        Icons.logout_rounded,
-                        size: 22,
+                      child: SvgPicture.asset(
+                        'assets/icons/logout.svg',
+                        width: 24,
+                        height: 24,
                         color: colors.errorSub,
                       ),
                     ),
@@ -388,8 +471,8 @@ class _Keypad extends StatelessWidget {
                       child: Text(
                         '0',
                         style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
                           color: colors.textStrong,
                         ),
                       ),
@@ -406,7 +489,7 @@ class _Keypad extends StatelessWidget {
                       onTap: onDelete,
                       child: Icon(
                         Icons.arrow_back_rounded,
-                        size: 22,
+                        size: 24,
                         color: colors.textStrong,
                       ),
                     ),
@@ -434,8 +517,8 @@ class _Keypad extends StatelessWidget {
                 child: Text(
                   key,
                   style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
                     color: colors.textStrong,
                   ),
                 ),
@@ -465,21 +548,22 @@ class _KeyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final plainTransparent = isTransparent && !isLogout;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 72,
         decoration: BoxDecoration(
-          color: isTransparent
-              ? Colors.transparent
-              : colors.backgroundElevation1,
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(
-            color: isLogout
-                ? colors.errorSub.withValues(alpha: 0.5)
-                : colors.strokeSub,
-            width: 1,
-          ),
+          color: isTransparent ? Colors.transparent : colors.strokeSoft,
+          borderRadius: plainTransparent ? null : BorderRadius.circular(32),
+          border: plainTransparent
+              ? null
+              : Border.all(
+                  color: isLogout
+                      ? colors.backgroundElevation1Alt.withValues(alpha: 1)
+                      : colors.backgroundElevation1Alt,
+                  width: 1,
+                ),
         ),
         child: Center(child: child),
       ),

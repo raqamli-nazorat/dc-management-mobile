@@ -50,7 +50,8 @@ class AuthService {
         await _storage.saveString(StorageService.userKey, jsonEncode(user));
       }
 
-      PinSession.instance.markVerified();
+      // PIN ekranida qayta tekshirish uchun sessiya bu yerda tasdiqlanmaydi.
+      PinSession.instance.reset();
       debugPrint('=== AUTH SERVICE: login muvaffaqiyatli ===');
       return (true, null);
     } catch (e, stack) {

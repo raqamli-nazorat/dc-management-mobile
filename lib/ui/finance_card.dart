@@ -57,7 +57,7 @@ class FinanceCard extends StatelessWidget {
                   title,
                   style: TextStyle(
                     fontSize: fontSize ?? 15,
-                    fontWeight: fontWeight ?? FontWeight.w700,
+                    fontWeight: fontWeight ?? FontWeight.w800,
                     color: textColor ?? colors.textStrong,
                     fontFamily: 'Manrope',
                   ),
