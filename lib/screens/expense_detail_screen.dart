@@ -6,6 +6,9 @@ import 'package:dcmanagement/services/role_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+/// _InfoField / Sababi kartochkalari va pastki «Rad etish» / «To'lov qildim» tugmalari radiusi.
+const double _kExpenseDetailInfoCardRadius = 12;
+
 class ExpenseDetailScreen extends StatefulWidget {
   final int id;
   final bool canDelete;
@@ -97,6 +100,31 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
     }
   }
 
+  Future<void> _rejectPayRequest(String reason) async {
+    try {
+      final token = await _auth.getToken();
+      if (token == null) throw Exception('Token topilmadi');
+      final cancelledExpense = await _api.cancelExpenseRequest(
+        token,
+        widget.id,
+        reason,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(cancelledExpense);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString(),
+            style: const TextStyle(fontFamily: 'Manrope'),
+          ),
+          backgroundColor: AppColors.of(context).errorSub,
+        ),
+      );
+    }
+  }
+
   Future<void> _deleteRequest() async {
     try {
       final token = await _auth.getToken();
@@ -133,14 +161,28 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
       barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (ctx) => _ActionModal(
         colors: colors,
-        title: "To'lovni tasdiqlaysizmi?",
-        subtitle: "To'lov yuborilgandan so'ng bu amalni bekor qilib bo'lmaydi",
-        confirmLabel: 'Tasdiqlash',
-        iconColor: colors.successStrong,
-        icon: Icons.check_circle_outline_rounded,
+        title: "To‘lov amalga oshirilganini tasdiqlaysizmi?",
+        subtitle: "Bu orqali to‘lov amalga oshirilgani tizimda qayd etiladi.",
+        confirmLabel: "Tasdiqlash",
+        confirmBackgroundColor: colors.successPrimary,
         onConfirm: () async {
           Navigator.of(ctx).pop();
           await _payRequest();
+        },
+      ),
+    );
+  }
+
+  Future<void> _showRejectPayModal(AppColors colors) async {
+    await showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      builder: (ctx) => _RejectPayReasonDialog(
+        colors: colors,
+        onCancel: () => Navigator.of(ctx).pop(),
+        onConfirm: (reason) async {
+          Navigator.of(ctx).pop();
+          await _rejectPayRequest(reason);
         },
       ),
     );
@@ -155,8 +197,8 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
         title: "Pulni qabul qildingizmi?",
         subtitle: "Tasdiqlashdan so'ng bu amalni bekor qilib bo'lmaydi",
         confirmLabel: 'Ha, qabul qildim',
-        iconColor: colors.successStrong,
         icon: Icons.check_circle_outline_rounded,
+        confirmBackgroundColor: colors.successStrong,
         onConfirm: () async {
           Navigator.of(ctx).pop();
           await _confirmRequest();
@@ -182,6 +224,11 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
         .format(value.abs())
         .replaceAll(',', ' ')
         .replaceAll('.', ',');
+  }
+
+  String _displayReason(dynamic raw) {
+    final s = raw?.toString().trim() ?? '';
+    return s.isEmpty ? '—' : s;
   }
 
   bool get _canPay =>
@@ -382,34 +429,67 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
     // Admin to'lagan, ishchi hali tasdiqlamagan → hech narsa ko'rsatmaydi
     if (_isPaid) return null;
 
-    // Hali to'lanmagan → yashil "Tasdiqlash" (pay)
+    // Hali to'lanmagan → "Rad etish" + "To'lov qildim"
+    const double payBarHeight = 52;
+    final payButtonShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(_kExpenseDetailInfoCardRadius),
+    );
+    final labelStyle = TextStyle(
+      fontFamily: 'Manrope',
+      fontSize: 16,
+      fontWeight: FontWeight.w700,
+      color: colors.white,
+    );
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton.icon(
-            onPressed: () => _showPayModal(colors),
-            icon: Icon(Icons.check_rounded, color: colors.white, size: 20),
-            label: Text(
-              'Tasdiqlash',
-              style: TextStyle(
-                fontFamily: 'Manrope',
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: colors.white,
+        child: Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: payBarHeight,
+                child: ElevatedButton.icon(
+                  onPressed: () => _showRejectPayModal(colors),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: colors.white,
+                    size: 20,
+                  ),
+                  label: Text('Rad etish', style: labelStyle),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.errorStrong,
+                    foregroundColor: colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    shape: payButtonShape,
+                  ),
+                ),
               ),
             ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colors.successStrong,
-              foregroundColor: colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+            const SizedBox(width: 12),
+            Expanded(
+              child: SizedBox(
+                height: payBarHeight,
+                child: ElevatedButton.icon(
+                  onPressed: () => _showPayModal(colors),
+                  icon: Icon(
+                    Icons.check_rounded,
+                    color: colors.white,
+                    size: 20,
+                  ),
+                  label: Text("To'lov qildim", style: labelStyle),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.accentStrong,
+                    foregroundColor: colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    shape: payButtonShape,
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -426,7 +506,11 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline_rounded, color: colors.errorSub, size: 48),
+              Icon(
+                Icons.error_outline_rounded,
+                color: colors.errorSub,
+                size: 48,
+              ),
               const SizedBox(height: 12),
               Text(
                 _error!,
@@ -493,7 +577,8 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
                 color: colors.backgroundElevation3,
               ),
               clipBehavior: Clip.antiAlias,
-              child: (avatarUrl != null &&
+              child:
+                  (avatarUrl != null &&
                       (avatarUrl.startsWith('http://') ||
                           avatarUrl.startsWith('https://')))
                   ? Image.network(
@@ -531,6 +616,11 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
           _InfoField(
             label: 'Summa',
             value: _formatAmount(_data!['amount']),
+            colors: colors,
+          ),
+          const SizedBox(height: 12),
+          _SababiReasonField(
+            value: _displayReason(_data!['reason']),
             colors: colors,
           ),
           const SizedBox(height: 12),
@@ -581,6 +671,221 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
   }
 }
 
+// ── Rad etish: sabab dialog (to'lov rad) ─────────────────────────────────────
+
+class _RejectPayReasonDialog extends StatefulWidget {
+  final AppColors colors;
+  final VoidCallback onCancel;
+  final void Function(String reason) onConfirm;
+
+  const _RejectPayReasonDialog({
+    required this.colors,
+    required this.onCancel,
+    required this.onConfirm,
+  });
+
+  @override
+  State<_RejectPayReasonDialog> createState() => _RejectPayReasonDialogState();
+}
+
+class _RejectPayReasonDialogState extends State<_RejectPayReasonDialog> {
+  final _reasonCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _reasonCtrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final reason = _reasonCtrl.text.trim();
+    if (reason.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Iltimos, rad etish sababini kiriting',
+            style: TextStyle(
+              fontFamily: 'Manrope',
+              color: widget.colors.textWhite,
+            ),
+          ),
+          backgroundColor: widget.colors.errorSub,
+        ),
+      );
+      return;
+    }
+    widget.onConfirm(reason);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = widget.colors;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        physics: const ClampingScrollPhysics(),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+          decoration: BoxDecoration(
+            color: colors.backgroundElevation1,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Rad etish sababini kiriting',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Manrope',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: colors.textStrong,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 120),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: colors.backgroundBase2,
+                    borderRadius: BorderRadius.circular(
+                      _kExpenseDetailInfoCardRadius,
+                    ),
+                    border: Border.all(color: colors.strokeSub),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(
+                      _kExpenseDetailInfoCardRadius,
+                    ),
+                    child: Stack(
+                      children: [
+                        TextField(
+                          controller: _reasonCtrl,
+                          minLines: 4,
+                          maxLines: 8,
+                          textAlignVertical: TextAlignVertical.top,
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: colors.textStrong,
+                            height: 1.45,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Iltimos, sababni yozing. Bu majburiy',
+                            hintStyle: TextStyle(
+                              fontFamily: 'Manrope',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: colors.textSoft,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.fromLTRB(
+                              14,
+                              14,
+                              26,
+                              22,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          right: 8,
+                          bottom: 8,
+                          child: CustomPaint(
+                            size: const Size(12, 12),
+                            painter: _TextAreaGripPainter(
+                              color: colors.iconSoft,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: widget.onCancel,
+                      child: Container(
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: colors.backgroundElevation1,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.close_rounded,
+                              color: colors.textStrong,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Bekor qilish',
+                              style: TextStyle(
+                                fontFamily: 'Manrope',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: colors.textStrong,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: _submit,
+                      child: Container(
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: colors.errorStrong,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.close_rounded,
+                              color: colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Rad etish',
+                              style: TextStyle(
+                                fontFamily: 'Manrope',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ── Action Modal (pay yoki confirm uchun) ─────────────────────────────────────
 
 class _ActionModal extends StatelessWidget {
@@ -588,8 +893,8 @@ class _ActionModal extends StatelessWidget {
   final String title;
   final String subtitle;
   final String confirmLabel;
-  final IconData icon;
-  final Color iconColor;
+  final IconData? icon;
+  final Color confirmBackgroundColor;
   final VoidCallback onConfirm;
 
   const _ActionModal({
@@ -597,8 +902,8 @@ class _ActionModal extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.confirmLabel,
-    required this.icon,
-    required this.iconColor,
+    this.icon,
+    required this.confirmBackgroundColor,
     required this.onConfirm,
   });
 
@@ -616,16 +921,18 @@ class _ActionModal extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(14),
+            if (icon != null) ...[
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: confirmBackgroundColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: confirmBackgroundColor, size: 26),
               ),
-              child: Icon(icon, color: iconColor, size: 26),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
+            ],
             Text(
               title,
               style: TextStyle(
@@ -656,14 +963,17 @@ class _ActionModal extends StatelessWidget {
                     child: Container(
                       height: 52,
                       decoration: BoxDecoration(
+                        color: colors.backgroundElevation1,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: colors.strokeSub),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.close_rounded,
-                              color: colors.textSub, size: 18),
+                          Icon(
+                            Icons.close_rounded,
+                            color: colors.textStrong,
+                            size: 18,
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             'Bekor qilish',
@@ -671,7 +981,7 @@ class _ActionModal extends StatelessWidget {
                               fontFamily: 'Manrope',
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: colors.textSub,
+                              color: colors.textStrong,
                             ),
                           ),
                         ],
@@ -686,7 +996,7 @@ class _ActionModal extends StatelessWidget {
                     child: Container(
                       height: 52,
                       decoration: BoxDecoration(
-                        color: iconColor,
+                        color: confirmBackgroundColor,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Center(
@@ -769,8 +1079,11 @@ class _DeleteModal extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.arrow_back,
-                              color: colors.textSub, size: 18),
+                          Icon(
+                            Icons.arrow_back,
+                            color: colors.textSub,
+                            size: 18,
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             'Orqaga',
@@ -864,8 +1177,7 @@ class _StatusRow extends StatelessWidget {
           width: 28,
           height: 28,
           decoration: BoxDecoration(
-            color:
-                checked ? colors.successStrong : colors.backgroundElevation2,
+            color: checked ? colors.successStrong : colors.backgroundElevation2,
             borderRadius: BorderRadius.circular(7),
             border: checked ? null : Border.all(color: colors.strokeStrong),
           ),
@@ -880,6 +1192,15 @@ class _StatusRow extends StatelessWidget {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+/// Xarajat detali «info» kartochkalari uchun yagona fon/border (rang farqi bo‘lmasin).
+BoxDecoration _expenseDetailInfoCardDecoration(AppColors colors) {
+  return BoxDecoration(
+    color: colors.backgroundBase2,
+    borderRadius: BorderRadius.circular(_kExpenseDetailInfoCardRadius),
+    border: Border.all(color: colors.strokeSub),
+  );
+}
+
 class _InitialAvatar extends StatelessWidget {
   final String initial;
   final AppColors colors;
@@ -887,16 +1208,102 @@ class _InitialAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Text(
-          initial,
+    child: Text(
+      initial,
+      style: TextStyle(
+        fontFamily: 'Manrope',
+        fontWeight: FontWeight.w900,
+        fontSize: 32,
+        color: colors.accentSub,
+      ),
+    ),
+  );
+}
+
+class _SababiReasonField extends StatelessWidget {
+  final String value;
+  final AppColors colors;
+
+  const _SababiReasonField({required this.value, required this.colors});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Sababi',
           style: TextStyle(
             fontFamily: 'Manrope',
-            fontWeight: FontWeight.w900,
-            fontSize: 32,
-            color: colors.accentSub,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: colors.textSub,
           ),
         ),
-      );
+        const SizedBox(height: 6),
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 112),
+          child: Container(
+            width: double.infinity,
+            decoration: _expenseDetailInfoCardDecoration(colors),
+            child: Stack(
+              clipBehavior: Clip.antiAlias,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 14, 26, 22),
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: Text(
+                      value,
+                      textAlign: TextAlign.left,
+                      style: TextStyle(
+                        fontFamily: 'Manrope',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: colors.textStrong,
+                        height: 1.45,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 8,
+                  bottom: 8,
+                  child: CustomPaint(
+                    size: const Size(12, 12),
+                    painter: _TextAreaGripPainter(color: colors.iconSoft),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TextAreaGripPainter extends CustomPainter {
+  _TextAreaGripPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.1
+      ..strokeCap = StrokeCap.round;
+    final w = size.width;
+    final h = size.height;
+    // Pastki o'ng burchakdagi textarea resize ko'rsatkichi — parallel qisqa diagonal chiziqlar
+    canvas.drawLine(Offset(w - 9, h - 1), Offset(w - 1, h - 9), paint);
+    canvas.drawLine(Offset(w - 5, h - 1), Offset(w - 1, h - 5), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _TextAreaGripPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 class _InfoField extends StatelessWidget {
@@ -911,36 +1318,32 @@ class _InfoField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Manrope',
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: colors.textSub,
-            ),
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: TextStyle(
+          fontFamily: 'Manrope',
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: colors.textSub,
+        ),
+      ),
+      const SizedBox(height: 6),
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: _expenseDetailInfoCardDecoration(colors),
+        child: Text(
+          value,
+          style: TextStyle(
+            fontFamily: 'Manrope',
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: colors.textStrong,
           ),
-          const SizedBox(height: 6),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            decoration: BoxDecoration(
-              color: colors.backgroundElevation1,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colors.strokeSub),
-            ),
-            child: Text(
-              value,
-              style: TextStyle(
-                fontFamily: 'Manrope',
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: colors.textStrong,
-              ),
-            ),
-          ),
-        ],
-      );
+        ),
+      ),
+    ],
+  );
 }

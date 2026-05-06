@@ -108,13 +108,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 "Rol topilmadi. Administrator bilan bog'laning.",
           );
         } else {
-          if (roles.length == 1) {
-            await RoleService.instance.setRole(roles[0]);
-          } else {
-            await RoleService.instance.clearSelectedRole();
-          }
+          await RoleService.instance.clearSelectedRole();
           if (!mounted) return;
-          context.go('/pin');
+          context.go('/select-role');
         }
       } else {
         setState(
@@ -370,10 +366,12 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       child: TextField(
         controller: controller,
+        textAlignVertical: TextAlignVertical.center,
         style: TextStyle(
           fontFamily: "Manrope",
           color: colors.textStrong,
           fontSize: 15,
+          height: 1.2,
         ),
         decoration: InputDecoration(
           hintText: hint,
@@ -381,12 +379,10 @@ class _LoginScreenState extends State<LoginScreen> {
             fontFamily: "Manrope",
             color: colors.textSoft,
             fontSize: 15,
+            height: 1.2,
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 18,
-          ),
+          contentPadding: const EdgeInsets.fromLTRB(16, 21, 16, 15),
         ),
       ),
     );
@@ -405,10 +401,12 @@ class _LoginScreenState extends State<LoginScreen> {
         controller: _passwordController,
         obscureText: _isPasswordHidden,
         obscuringCharacter: '*',
+        textAlignVertical: TextAlignVertical.center,
         style: TextStyle(
           fontFamily: "Manrope",
           color: colors.textStrong,
           fontSize: 15,
+          height: 1.2,
         ),
         decoration: InputDecoration(
           hintText: "Parol",
@@ -416,11 +414,13 @@ class _LoginScreenState extends State<LoginScreen> {
             fontFamily: "Manrope",
             color: colors.textSoft,
             fontSize: 15,
+            height: 1.2,
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 18,
+          contentPadding: const EdgeInsets.fromLTRB(16, 21, 16, 15),
+          suffixIconConstraints: const BoxConstraints(
+            minWidth: 48,
+            minHeight: 56,
           ),
           suffixIcon: _passwordController.text.isNotEmpty
               ? IconButton(

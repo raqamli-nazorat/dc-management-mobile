@@ -4,8 +4,24 @@ import 'package:dcmanagement/services/role_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class RoleSelectScreen extends StatelessWidget {
+class RoleSelectScreen extends StatefulWidget {
   const RoleSelectScreen({super.key});
+
+  @override
+  State<RoleSelectScreen> createState() => _RoleSelectScreenState();
+}
+
+class _RoleSelectScreenState extends State<RoleSelectScreen> {
+  final _authService = AuthService();
+  late final Future<List<String>> _rolesFuture;
+  String? _savingRole;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _rolesFuture = _authService.getUserRoles();
+  }
 
   String _getIconAsset(String role) {
     switch (role.toLowerCase()) {
@@ -16,8 +32,11 @@ class RoleSelectScreen extends StatelessWidget {
         return 'assets/roles_icon/manager.png';
       case 'accountant':
         return 'assets/roles_icon/acsessor.png';
+      case 'auditor':
       case 'observer':
         return 'assets/roles_icon/modertator.png';
+      case 'employee':
+        return 'assets/roles_icon/worker.png';
       default:
         return 'assets/roles_icon/worker.png';
     }
@@ -32,10 +51,46 @@ class RoleSelectScreen extends StatelessWidget {
         return "Menejer";
       case 'accountant':
         return "Hisobchi";
+      case 'auditor':
+        return "Auditor";
       case 'observer':
         return "Nazoratchi";
-      default:
+      case 'employee':
         return "Xodim";
+      default:
+        return role;
+    }
+  }
+
+  void _logRoleMapping(List<String> roles) {
+    final mappedRoles = roles
+        .map((role) => '$role -> ${_getTitle(role)}')
+        .join(', ');
+    debugPrint('=== ROLE SELECT: response roles [$mappedRoles] ===');
+  }
+
+  Future<void> _selectRole(String role) async {
+    if (_savingRole != null) return;
+
+    debugPrint('=== ROLE SELECT: selected role=$role ===');
+    setState(() {
+      _savingRole = role;
+      _errorMessage = null;
+    });
+
+    try {
+      final activeRole = await _authService.changeActiveRole(role);
+      debugPrint('=== ROLE SELECT: API active_role=$activeRole ===');
+      await RoleService.instance.setRole(activeRole);
+      if (!mounted) return;
+      context.go('/home');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _savingRole = null;
+        _errorMessage = "Rolni o'zgartirishda xatolik yuz berdi: $e";
+      });
+      debugPrint('=== ROLE SELECT CHANGE ERROR: $e ===');
     }
   }
 
@@ -46,7 +101,7 @@ class RoleSelectScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: colors.backgroundBase,
       body: FutureBuilder<List<String>>(
-        future: AuthService().getUserRoles(),
+        future: _rolesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
@@ -55,6 +110,7 @@ class RoleSelectScreen extends StatelessWidget {
           }
 
           final roles = snapshot.data ?? [];
+          _logRoleMapping(roles);
 
           return SafeArea(
             child: Padding(
@@ -63,7 +119,7 @@ class RoleSelectScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "O'zingiz uchun rolni tanlang",
+                    "Siz dasturni bir nechta rol bilan foydalanishingiz mumkin",
                     style: TextStyle(
                       color: colors.textStrong,
                       fontSize: 28,
@@ -74,14 +130,27 @@ class RoleSelectScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Tizim funksiyalariga kirish siz tanlagan rolga bog'liq",
+                    "Quyidagilardan birini tanlang.",
                     style: TextStyle(
-                      color: colors.white,
+                      color: colors.textStrong,
                       fontSize: 15,
                       letterSpacing: 1.2,
                       height: 1.4,
+                      fontFamily: "Manrope",
                     ),
                   ),
+                  if (_errorMessage != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _errorMessage!,
+                      style: TextStyle(
+                        color: colors.errorSub,
+                        fontSize: 13,
+                        fontFamily: "Manrope",
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                   const Spacer(),
 
                   // Role Cards
@@ -94,12 +163,11 @@ class RoleSelectScreen extends StatelessWidget {
                         const SizedBox(height: 14),
                     itemBuilder: (context, index) {
                       final role = roles[index];
+                      final isSaving = _savingRole == role;
                       return GestureDetector(
-                        onTap: () async {
-                          await RoleService.instance.setRole(role);
-                          if (!context.mounted) return;
-                          context.go('/home');
-                        },
+                        onTap: _savingRole == null
+                            ? () => _selectRole(role)
+                            : null,
                         child: Container(
                           height: 68,
                           decoration: BoxDecoration(
@@ -126,6 +194,17 @@ class RoleSelectScreen extends StatelessWidget {
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
+                                if (isSaving) ...[
+                                  const SizedBox(width: 12),
+                                  SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: colors.accentSub,
+                                    ),
+                                  ),
+                                ],
                                 // const Spacer(),
                               ],
                             ),

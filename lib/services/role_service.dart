@@ -17,10 +17,13 @@ class RoleService extends ChangeNotifier {
     return r == 'admin' || r == 'superadmin';
   }
 
-  /// manager / accountant / observer  (admin emas)
+  /// manager / accountant / auditor / observer  (admin emas)
   bool get isManager {
     final r = _role?.toLowerCase();
-    return r == 'manager' || r == 'accountant' || r == 'observer';
+    return r == 'manager' ||
+        r == 'accountant' ||
+        r == 'auditor' ||
+        r == 'observer';
   }
 
   /// employee
@@ -67,6 +70,9 @@ class RoleService extends ChangeNotifier {
       case 'admin':
         return 'admin';
       case 'manager':
+      case 'accountant':
+      case 'auditor':
+      case 'observer':
         return 'manager';
       default:
         return 'employee';
@@ -83,6 +89,8 @@ class RoleService extends ChangeNotifier {
         return 'Menejer';
       case 'accountant':
         return 'Hisobchi';
+      case 'auditor':
+        return 'Auditor';
       case 'observer':
         return 'Nazoratchi';
       case 'employee':

@@ -16,11 +16,10 @@ Widget _svgIcon(String path, Color color, {double size = 20}) =>
       colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
     );
 
-Widget _pngIcon(String path, Color color, {double size = 20}) =>
-    ColorFiltered(
-      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-      child: Image.asset(path, width: size, height: size),
-    );
+Widget _pngIcon(String path, Color color, {double size = 20}) => ColorFiltered(
+  colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+  child: Image.asset(path, width: size, height: size),
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Screen
@@ -59,7 +58,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Chiqish',
-          style: TextStyle(fontWeight: FontWeight.w700, color: colors.textStrong),
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: colors.textStrong,
+          ),
         ),
         content: Text(
           'Hisobdan chiqmoqchimisiz?',
@@ -68,7 +70,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Bekor qilish', style: TextStyle(color: colors.textSoft)),
+            child: Text(
+              'Bekor qilish',
+              style: TextStyle(color: colors.textSoft),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -190,12 +195,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
             iconWidget: _pngIcon('assets/icons/users.svg', colors.iconSub),
             title: 'Shaxsiy ma\'lumotlar',
             children: [
-              _DataRow(label: 'Telefon', value: user.phoneNumber.isEmpty ? '—' : user.phoneNumber, colors: colors),
+              _DataRow(
+                label: 'Telefon',
+                value: user.phoneNumber.isEmpty ? '—' : user.phoneNumber,
+                colors: colors,
+              ),
               _divider(colors),
-              _DataRow(label: 'Pasport seriyasi', value: user.passportSeries.isEmpty ? '—' : user.passportSeries, colors: colors),
+              _DataRow(
+                label: 'Pasport seriyasi',
+                value: user.passportSeries.isEmpty ? '—' : user.passportSeries,
+                colors: colors,
+              ),
               if (user.dateJoined != null && user.dateJoined!.isNotEmpty) ...[
                 _divider(colors),
-                _DataRow(label: 'Qo\'shilgan sana', value: _formatDate(user.dateJoined!), colors: colors),
+                _DataRow(
+                  label: 'Qo\'shilgan sana',
+                  value: _formatDate(user.dateJoined!),
+                  colors: colors,
+                ),
               ],
             ],
           ),
@@ -206,7 +223,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (rs.isWorker || rs.isManager) ...[
             _SectionCard(
               colors: colors,
-              iconWidget: _svgIcon('assets/icons/briefcase-dollar.svg', colors.iconSub),
+              iconWidget: _svgIcon(
+                'assets/icons/briefcase-dollar.svg',
+                colors.iconSub,
+              ),
               title: 'Moliyaviy',
               children: [
                 _DataRow(
@@ -230,7 +250,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (rs.isWorker) ...[
             _QuickLinkTile(
               colors: colors,
-              iconWidget: _svgIcon('assets/icons/briefcase-dollar.svg', colors.accentSub),
+              iconWidget: _svgIcon(
+                'assets/icons/briefcase-dollar.svg',
+                colors.accentSub,
+              ),
               title: 'Mening so\'rovlarim',
               subtitle: 'Xarajat so\'rovlarini ko\'rish',
               onTap: () => context.push('/my-requests'),
@@ -242,7 +265,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (rs.isManager) ...[
             _QuickLinkTile(
               colors: colors,
-              iconWidget: _svgIcon('assets/icons/analytics.svg', colors.accentSub),
+              iconWidget: _svgIcon(
+                'assets/icons/analytics.svg',
+                colors.accentSub,
+              ),
               title: 'Xarajat so\'rovlari',
               subtitle: 'Barcha so\'rovlarni ko\'rish va tasdiqlash',
               onTap: () => context.push('/finance/expense-requests'),
@@ -269,7 +295,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               decoration: BoxDecoration(
                 color: colors.errorSub.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: colors.errorSub.withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: colors.errorSub.withValues(alpha: 0.3),
+                ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -296,7 +324,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _divider(AppColors colors) => Divider(height: 20, color: colors.strokeSoft);
+  Widget _divider(AppColors colors) =>
+      Divider(height: 20, color: colors.strokeSoft);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -421,12 +450,20 @@ class _AdminGrid extends StatelessWidget {
       ),
       _GridItem(
         title: 'Moliya',
-        icon: _svgIcon('assets/icons/briefcase-dollar.svg', colors.accentSub, size: 24),
+        icon: _svgIcon(
+          'assets/icons/briefcase-dollar.svg',
+          colors.accentSub,
+          size: 24,
+        ),
         onTap: () => context.go('/finance'),
       ),
       _GridItem(
         title: 'Hisobotlar',
-        icon: _svgIcon('assets/icons/analytics.svg', colors.accentSub, size: 24),
+        icon: _svgIcon(
+          'assets/icons/analytics.svg',
+          colors.accentSub,
+          size: 24,
+        ),
         onTap: () => context.go('/reports'),
       ),
     ];
@@ -438,7 +475,9 @@ class _AdminGrid extends StatelessWidget {
       crossAxisSpacing: 10,
       mainAxisSpacing: 10,
       childAspectRatio: 2.2,
-      children: items.map((item) => _GridCell(item: item, colors: colors)).toList(),
+      children: items
+          .map((item) => _GridCell(item: item, colors: colors))
+          .toList(),
     );
   }
 }
@@ -447,7 +486,11 @@ class _GridItem {
   final String title;
   final Widget icon;
   final VoidCallback onTap;
-  const _GridItem({required this.title, required this.icon, required this.onTap});
+  const _GridItem({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+  });
 }
 
 class _GridCell extends StatelessWidget {
@@ -592,13 +635,7 @@ class _DataRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            color: colors.textSub,
-          ),
-        ),
+        Text(label, style: TextStyle(fontSize: 14, color: colors.textSub)),
         Text(
           value,
           style: TextStyle(
@@ -703,8 +740,10 @@ class _RoleSwitcherSection extends StatelessWidget {
         return 'Menejer';
       case 'accountant':
         return 'Hisobchi';
-      case 'observer':
+      case 'auditor':
         return 'Nazoratchi';
+      // case 'observer':
+      //   return 'Nazoratchi';
       case 'employee':
         return 'Xodim';
       default:
@@ -745,7 +784,10 @@ class _RoleSwitcherSection extends StatelessWidget {
                             borderRadius: BorderRadius.circular(9),
                           ),
                           alignment: Alignment.center,
-                          child: _pngIcon('assets/icons/users.svg', colors.iconSub),
+                          child: _pngIcon(
+                            'assets/icons/users.svg',
+                            colors.iconSub,
+                          ),
                         ),
                         const SizedBox(width: 10),
                         Text(
@@ -775,11 +817,16 @@ class _RoleSwitcherSection extends StatelessWidget {
                               children: [
                                 Text(
                                   'Faol rol',
-                                  style: TextStyle(fontSize: 12, color: colors.textSoft),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: colors.textSoft,
+                                  ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  currentRole.isNotEmpty ? _roleLabel(currentRole) : 'Tanlanmagan',
+                                  currentRole.isNotEmpty
+                                      ? _roleLabel(currentRole)
+                                      : 'Tanlanmagan',
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontFamily: 'Manrope',
@@ -791,9 +838,16 @@ class _RoleSwitcherSection extends StatelessWidget {
                             ),
                             if (roles.length > 1)
                               GestureDetector(
-                                onTap: () => _showRolePicker(context, roles, currentRole),
+                                onTap: () => _showRolePicker(
+                                  context,
+                                  roles,
+                                  currentRole,
+                                ),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 7,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: colors.accentDisabled,
                                     borderRadius: BorderRadius.circular(10),
@@ -820,14 +874,22 @@ class _RoleSwitcherSection extends StatelessWidget {
                               final isActive = r == currentRole;
                               return GestureDetector(
                                 onTap: () async {
-                                  if (!isActive) await RoleService.instance.setRole(r);
+                                  if (!isActive)
+                                    await RoleService.instance.setRole(r);
                                 },
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: isActive ? colors.accentSub : colors.backgroundElevation2,
+                                    color: isActive
+                                        ? colors.accentSub
+                                        : colors.backgroundElevation2,
                                     borderRadius: BorderRadius.circular(20),
-                                    border: isActive ? null : Border.all(color: colors.strokeSub),
+                                    border: isActive
+                                        ? null
+                                        : Border.all(color: colors.strokeSub),
                                   ),
                                   child: Text(
                                     _roleLabel(r),
@@ -835,7 +897,9 @@ class _RoleSwitcherSection extends StatelessWidget {
                                       fontSize: 12,
                                       fontFamily: 'Manrope',
                                       fontWeight: FontWeight.w600,
-                                      color: isActive ? colors.textWhite : colors.textSub,
+                                      color: isActive
+                                          ? colors.textWhite
+                                          : colors.textSub,
                                     ),
                                   ),
                                 ),
@@ -855,7 +919,11 @@ class _RoleSwitcherSection extends StatelessWidget {
     );
   }
 
-  void _showRolePicker(BuildContext context, List<String> roles, String currentRole) {
+  void _showRolePicker(
+    BuildContext context,
+    List<String> roles,
+    String currentRole,
+  ) {
     final colors = AppColors.of(context);
     showModalBottomSheet(
       context: context,
@@ -891,11 +959,18 @@ class _RoleSwitcherSection extends StatelessWidget {
                 child: Container(
                   width: double.infinity,
                   margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   decoration: BoxDecoration(
-                    color: isActive ? colors.accentSub : colors.backgroundElevation2,
+                    color: isActive
+                        ? colors.accentSub
+                        : colors.backgroundElevation2,
                     borderRadius: BorderRadius.circular(14),
-                    border: isActive ? null : Border.all(color: colors.strokeSub),
+                    border: isActive
+                        ? null
+                        : Border.all(color: colors.strokeSub),
                   ),
                   child: Row(
                     children: [
@@ -910,12 +985,18 @@ class _RoleSwitcherSection extends StatelessWidget {
                           fontFamily: 'Manrope',
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: isActive ? colors.textWhite : colors.textStrong,
+                          color: isActive
+                              ? colors.textWhite
+                              : colors.textStrong,
                         ),
                       ),
                       if (isActive) ...[
                         const Spacer(),
-                        Icon(Icons.check_rounded, color: colors.textWhite, size: 18),
+                        Icon(
+                          Icons.check_rounded,
+                          color: colors.textWhite,
+                          size: 18,
+                        ),
                       ],
                     ],
                   ),
@@ -964,7 +1045,10 @@ class _ThemeSwitcher extends StatelessWidget {
                         borderRadius: BorderRadius.circular(9),
                       ),
                       alignment: Alignment.center,
-                      child: _pngIcon('assets/icons/dashboard.svg', colors.iconSub),
+                      child: _pngIcon(
+                        'assets/icons/dashboard.svg',
+                        colors.iconSub,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Text(
@@ -990,21 +1074,24 @@ class _ThemeSwitcher extends StatelessWidget {
                       label: 'Kunduz',
                       icon: Icons.wb_sunny_rounded,
                       selected: current == ThemeMode.light,
-                      onTap: () => ThemeNotifier.instance.setMode(ThemeMode.light),
+                      onTap: () =>
+                          ThemeNotifier.instance.setMode(ThemeMode.light),
                     ),
                     _ThemeOption(
                       colors: colors,
                       label: 'Avtomatik',
                       icon: Icons.brightness_auto_rounded,
                       selected: current == ThemeMode.system,
-                      onTap: () => ThemeNotifier.instance.setMode(ThemeMode.system),
+                      onTap: () =>
+                          ThemeNotifier.instance.setMode(ThemeMode.system),
                     ),
                     _ThemeOption(
                       colors: colors,
                       label: 'Tungi',
                       icon: Icons.nightlight_round,
                       selected: current == ThemeMode.dark,
-                      onTap: () => ThemeNotifier.instance.setMode(ThemeMode.dark),
+                      onTap: () =>
+                          ThemeNotifier.instance.setMode(ThemeMode.dark),
                     ),
                   ],
                 ),
@@ -1047,7 +1134,11 @@ class _ThemeOption extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 18, color: selected ? colors.white : colors.iconSub),
+              Icon(
+                icon,
+                size: 18,
+                color: selected ? colors.white : colors.iconSub,
+              ),
               const SizedBox(height: 4),
               Text(
                 label,

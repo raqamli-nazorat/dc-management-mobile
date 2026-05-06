@@ -83,6 +83,12 @@ class UserModel {
               return 'Admin';
             case 'manager':
               return 'Menejer';
+            case 'accountant':
+              return 'Hisobchi';
+            case 'auditor':
+              return 'Auditor';
+            case 'observer':
+              return 'Nazoratchi';
             case 'employee':
               return 'Xodim';
             default:

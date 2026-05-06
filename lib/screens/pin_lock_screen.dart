@@ -116,13 +116,9 @@ class _PinScreenState extends State<PinScreen>
     if (!mounted) return;
     if (success) {
       PinSession.instance.markVerified();
-      final roles = await _auth.getUserRoles();
+      await RoleService.instance.clearSelectedRole();
       if (!mounted) return;
-      if (roles.length > 1 && !RoleService.instance.hasRole) {
-        context.go('/select-role');
-      } else {
-        context.go('/home');
-      }
+      context.go('/select-role');
     } else if (throttleSec != null) {
       setState(() => _isLoading = false);
       _startThrottle(throttleSec);

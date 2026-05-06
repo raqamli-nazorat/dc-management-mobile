@@ -43,31 +43,31 @@ class FinanceScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          FinanceCard(
-            onTap: () => context.push('/finance/expense-requests'),
-            title: "Mening so'rovlarim",
-            imagePath: 'assets/images/myrequest.png',
-            isWide: true,
-          ),
-          // Row(
-          //   children: [
-          //     Expanded(
-          //       child: FinanceCard(
-          //         title: 'Ish haqi',
-          //         onTap: () => context.push('/finance/salary'),
-          //         imagePath: 'assets/images/briefcase.png',
-          //       ),
-          //     ),
-          //     const SizedBox(width: 12),
-          //     Expanded(
-          //       child: FinanceCard(
-          //         onTap: () => context.push('/finance/history'),
-          //         title: 'Tarix',
-          //         imagePath: 'assets/images/mobile.png',
-          //       ),
-          //     ),
-          //   ],
+          // FinanceCard(
+          //   onTap: () => context.push('/finance/expense-requests'),
+          //   title: "Mening so'rovlarim",
+          //   imagePath: 'assets/images/myrequest.png',
+          //   isWide: true,
           // ),
+          Row(
+            children: [
+              Expanded(
+                child: FinanceCard(
+                  title: 'Ish haqi',
+                  onTap: () => context.push('/finance/salary'),
+                  imagePath: 'assets/images/briefcase.png',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FinanceCard(
+                  onTap: () => context.push('/finance/history'),
+                  title: 'Tarix',
+                  imagePath: 'assets/images/mobile.png',
+                ),
+              ),
+            ],
+          ),
         ],
       );
     }

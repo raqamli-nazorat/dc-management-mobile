@@ -46,12 +46,12 @@ final appRouter = GoRouter(
     }
 
     final roles = await _authService.getUserRoles();
-    if (roles.length > 1 && !RoleService.instance.hasRole) {
+    if (roles.isNotEmpty && !RoleService.instance.hasRole) {
       if (onSelectRole) return null;
       return '/select-role';
     }
 
-    if (onLogin || onPin) return '/home';
+    if (onLogin || onPin) return '/select-role';
     return null;
   },
   routes: [

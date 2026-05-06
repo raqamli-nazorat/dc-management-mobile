@@ -227,6 +227,109 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
     });
   }
 
+  void _closeSearch() {
+    setState(() {
+      _searching = false;
+      _searchCtrl.clear();
+      _filtered = _all;
+    });
+  }
+
+  void _showCancelSuccessBanner(AppColors colors) {
+    final overlay = Overlay.of(context);
+    late final OverlayEntry entry;
+    Timer? timer;
+
+    void close() {
+      timer?.cancel();
+      entry.remove();
+    }
+
+    entry = OverlayEntry(
+      builder: (context) {
+        final top = MediaQuery.paddingOf(context).top + 10;
+        return Positioned(
+          top: top,
+          left: 20,
+          right: 20,
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+              decoration: BoxDecoration(
+                color: colors.backgroundElevation1,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colors.strokeSub),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(
+                      Icons.error_outline_rounded,
+                      color: colors.errorStrong,
+                      size: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "So'rov rad etildi.",
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: colors.textStrong,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          "So'rov bo'yicha rad etish sababi saqlandi.",
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: colors.textSub,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: close,
+                    child: Padding(
+                      padding: const EdgeInsets.all(2),
+                      child: Icon(
+                        Icons.close_rounded,
+                        color: colors.iconSub,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    overlay.insert(entry);
+    timer = Timer(const Duration(seconds: 3), close);
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
@@ -330,13 +433,6 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
             ),
           ),
           const SizedBox(width: 10),
-
-          // _ActionButton(icon: icon, onTap: onTap, colors: colors)
-          // const SizedBox(width: 10),
-          // IconButton(
-          //   icon: Icon(Icons.filter, color: colors.textStrong),
-          //   onPressed: () => _openFilter(colors),
-          // ),
         ],
       ),
       body: SafeArea(
@@ -346,50 +442,111 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
               child: _searching
-                  ? TextField(
-                      controller: _searchCtrl,
-                      autofocus: true,
-                      onChanged: _applySearch,
-                      style: TextStyle(
-                        fontFamily: 'Manrope',
-                        fontWeight: FontWeight.w500,
-                        color: colors.textStrong,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Qidirish...',
-                        hintStyle: TextStyle(
-                          fontFamily: 'Manrope',
-                          color: colors.textSoft,
-                        ),
-                        suffixIcon: IconButton(
-                          icon: Icon(Icons.close, color: colors.iconSub),
-                          onPressed: () {
-                            setState(() {
-                              _searching = false;
-                              _searchCtrl.clear();
-                              _filtered = _all;
-                            });
-                          },
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: colors.strokeSub),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: colors.strokeSub),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: colors.accentSub),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        filled: true,
-                        fillColor: colors.backgroundElevation1,
-                      ),
+                  ? ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: _searchCtrl,
+                      builder: (context, searchValue, _) {
+                        final hasQuery = searchValue.text.isNotEmpty;
+                        final searchFieldDecoration = InputDecoration(
+                          hintText: 'Izlash',
+                          hintStyle: TextStyle(
+                            fontFamily: 'Manrope',
+                            color: colors.textSoft,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            color: colors.iconSub,
+                            size: 22,
+                          ),
+                          prefixIconConstraints: const BoxConstraints(
+                            minWidth: 44,
+                            minHeight: 44,
+                          ),
+                          suffixIcon: IconButton(
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 40,
+                              minHeight: 40,
+                            ),
+                            icon: Icon(
+                              Icons.close_rounded,
+                              size: 20,
+                              color: colors.iconSub,
+                            ),
+                            onPressed: () {
+                              if (hasQuery) {
+                                _searchCtrl.clear();
+                                _applySearch('');
+                              } else {
+                                _closeSearch();
+                              }
+                            },
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: colors.strokeSub),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: colors.strokeSub),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: colors.strokeSub),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 12,
+                          ),
+                          filled: true,
+                          fillColor: colors.backgroundElevation1,
+                        );
+                        return AnimatedSize(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOutCubic,
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _searchCtrl,
+                                  autofocus: true,
+                                  onChanged: _applySearch,
+                                  style: TextStyle(
+                                    fontFamily: 'Manrope',
+                                    fontWeight: FontWeight.w500,
+                                    color: colors.textStrong,
+                                  ),
+                                  decoration: searchFieldDecoration,
+                                ),
+                              ),
+                              if (hasQuery) ...[
+                                const SizedBox(width: 10),
+                                TextButton(
+                                  onPressed: _closeSearch,
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: colors.textSub,
+                                    padding: const EdgeInsets.only(left: 4),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: const Text(
+                                    'Yopish',
+                                    style: TextStyle(
+                                      fontFamily: 'Manrope',
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
                     )
                   : Row(
                       children: [
@@ -478,12 +635,21 @@ class _ExpenseRequestsScreenState extends State<ExpenseRequestsScreen> {
         itemCount: _filtered.length,
         separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (context, index) => GestureDetector(
-          onTap: () {
+          onTap: () async {
             final id = _filtered[index]['id'] as int?;
             if (id == null) return;
-            Navigator.of(context).push(
+            final result = await Navigator.of(context).push<Object?>(
               MaterialPageRoute(builder: (_) => ExpenseDetailScreen(id: id)),
             );
+            if (!mounted) return;
+            if (result is Map<String, dynamic> &&
+                result['cancelled_at'] != null) {
+              await _load();
+              if (!mounted) return;
+              _showCancelSuccessBanner(colors);
+            } else if (result == true) {
+              await _load();
+            }
           },
           child: _ExpenseCard(item: _filtered[index], colors: colors),
         ),
@@ -608,7 +774,7 @@ class _ExpenseCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isApproved
                       ? colors.successStrong
-                      : colors.backgroundElevation2,
+                      : colors.iconDisabled,
                   borderRadius: BorderRadius.circular(6),
                   border: isApproved
                       ? null

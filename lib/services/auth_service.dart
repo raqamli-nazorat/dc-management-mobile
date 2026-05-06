@@ -50,8 +50,8 @@ class AuthService {
         await _storage.saveString(StorageService.userKey, jsonEncode(user));
       }
 
-      // PIN ekranida qayta tekshirish uchun sessiya bu yerda tasdiqlanmaydi.
-      PinSession.instance.reset();
+      // Parol bilan kirishning o'zi joriy sessiya uchun PIN tekshiruvini almashtiradi.
+      PinSession.instance.markVerified();
       debugPrint('=== AUTH SERVICE: login muvaffaqiyatli ===');
       return (true, null);
     } catch (e, stack) {
@@ -116,6 +116,37 @@ class AuthService {
 
   Future<String?> getToken() => _storage.getString(StorageService.tokenKey);
   Future<String?> getUsername() => _storage.getString('plain_username');
+
+  Future<String> changeActiveRole(String role) async {
+    debugPrint('=== AUTH SERVICE: changeActiveRole start role=$role ===');
+    final token = await getToken();
+    if (token == null || token.isEmpty) {
+      debugPrint(
+        '=== AUTH SERVICE: changeActiveRole failed token is empty ===',
+      );
+      throw ApiException('Token topilmadi', 0);
+    }
+
+    debugPrint('=== AUTH SERVICE: changeActiveRole sending request ===');
+    final activeRole = await _api.changeActiveRole(token, role);
+    debugPrint(
+      '=== AUTH SERVICE: changeActiveRole success active_role=$activeRole ===',
+    );
+    await _saveActiveRoleToStoredUser(activeRole);
+    return activeRole;
+  }
+
+  Future<void> _saveActiveRoleToStoredUser(String role) async {
+    final raw = await _storage.getString(StorageService.userKey);
+    if (raw == null || raw.isEmpty) return;
+
+    final user = jsonDecode(raw);
+    if (user is! Map<String, dynamic>) return;
+
+    user['active_role'] = role;
+    await _storage.saveString(StorageService.userKey, jsonEncode(user));
+  }
+
   Future<int?> getPasswordLength() async {
     final raw = await _storage.getString('password_length');
     return raw != null ? int.tryParse(raw) : null;

@@ -12,8 +12,9 @@ class _ApiLoggingInterceptor extends Interceptor {
   static String _payload(dynamic data) {
     if (data == null) return 'null';
     if (data is FormData) {
-      final fieldLines =
-          data.fields.map((e) => '    ${e.key}: ${e.value}').join('\n');
+      final fieldLines = data.fields
+          .map((e) => '    ${e.key}: ${e.value}')
+          .join('\n');
       final fileLines = data.files
           .map((e) => '    ${e.key}: file(${e.value.filename})')
           .join('\n');
@@ -36,10 +37,24 @@ class _ApiLoggingInterceptor extends Interceptor {
     return out;
   }
 
+  static String _responseStatus(Response response) {
+    final statusMessage = response.statusMessage?.trim();
+    final status = statusMessage == null || statusMessage.isEmpty
+        ? 'HTTP ${response.statusCode}'
+        : 'HTTP ${response.statusCode} $statusMessage';
+    final data = response.data;
+    if (data is Map<String, dynamic> && data.containsKey('success')) {
+      return '$status, success=${data['success']}';
+    }
+    return status;
+  }
+
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    options.extra['debug_started_at'] = DateTime.now().millisecondsSinceEpoch;
     final buffer = StringBuffer()
-      ..writeln('=== API REQUEST [${options.method}] ${options.uri}');
+      ..writeln('=== API REQUEST [${options.method}] ${options.uri}')
+      ..writeln('status: started');
     if (options.queryParameters.isNotEmpty) {
       buffer.writeln('query: ${_payload(options.queryParameters)}');
     }
@@ -56,8 +71,14 @@ class _ApiLoggingInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
+    final startedAt = response.requestOptions.extra['debug_started_at'] as int?;
+    final elapsed = startedAt == null
+        ? null
+        : DateTime.now().millisecondsSinceEpoch - startedAt;
     debugPrint(
       '=== API RESPONSE [${response.statusCode}] ${response.requestOptions.uri}\n'
+      'status: ${_responseStatus(response)}'
+      '${elapsed == null ? '' : ', elapsed=${elapsed}ms'}\n'
       'data: ${_payload(response.data)}\n===',
     );
     handler.next(response);
@@ -66,9 +87,15 @@ class _ApiLoggingInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     final res = err.response;
+    final startedAt = err.requestOptions.extra['debug_started_at'] as int?;
+    final elapsed = startedAt == null
+        ? null
+        : DateTime.now().millisecondsSinceEpoch - startedAt;
     final buf = StringBuffer()
+      ..writeln('=== API ERROR [${res?.statusCode}] ${err.requestOptions.uri}')
       ..writeln(
-        '=== API ERROR [${res?.statusCode}] ${err.requestOptions.uri}',
+        'status: ${res == null ? 'no response' : _responseStatus(res)}'
+        '${elapsed == null ? '' : ', elapsed=${elapsed}ms'}',
       )
       ..writeln('type: ${err.type}')
       ..writeln('message: ${err.message}');
@@ -100,7 +127,9 @@ class _TokenRefreshInterceptor extends Interceptor {
 
   @override
   Future<void> onResponse(
-      Response response, ResponseInterceptorHandler handler) async {
+    Response response,
+    ResponseInterceptorHandler handler,
+  ) async {
     // validateStatus allows 401 through as a normal response — catch it here
     if (response.statusCode == 401 &&
         !response.requestOptions.path.contains('auth/token/refresh/') &&
@@ -110,10 +139,12 @@ class _TokenRefreshInterceptor extends Interceptor {
       try {
         final refreshToken = await storage.getString('refresh_token');
         if (refreshToken != null && refreshToken.isNotEmpty) {
-          final refreshDio = Dio(BaseOptions(
-            baseUrl: dio.options.baseUrl,
-            validateStatus: (s) => s != null && s < 600,
-          ));
+          final refreshDio = Dio(
+            BaseOptions(
+              baseUrl: dio.options.baseUrl,
+              validateStatus: (s) => s != null && s < 600,
+            ),
+          );
           refreshDio.interceptors.add(_ApiLoggingInterceptor());
           final refreshResponse = await refreshDio.post(
             'auth/token/refresh/',
@@ -123,8 +154,7 @@ class _TokenRefreshInterceptor extends Interceptor {
           final body = refreshResponse.data as Map<String, dynamic>?;
           final success = body?['success'] as bool? ?? false;
           final dataMap = body?['data'] as Map<String, dynamic>?;
-          final newAccess =
-              (dataMap?['access'] ?? body?['access']) as String?;
+          final newAccess = (dataMap?['access'] ?? body?['access']) as String?;
 
           if (newAccess != null && (success || dataMap == null)) {
             debugPrint('=== TOKEN REFRESHED, retrying request ===');
@@ -160,15 +190,15 @@ class ApiService {
   ApiService({
     String baseUrl = 'https://backend.raqamlinazorat.uz/api/',
     StorageService? storage,
-  })  : _storage = storage ?? StorageService(),
-        _dio = Dio(
-          BaseOptions(
-            baseUrl: baseUrl,
-            followRedirects: true,
-            maxRedirects: 5,
-            validateStatus: (status) => status != null && status < 500,
-          ),
-        ) {
+  }) : _storage = storage ?? StorageService(),
+       _dio = Dio(
+         BaseOptions(
+           baseUrl: baseUrl,
+           followRedirects: true,
+           maxRedirects: 5,
+           validateStatus: (status) => status != null && status < 500,
+         ),
+       ) {
     _dio.interceptors.add(_ApiLoggingInterceptor());
     _dio.interceptors.add(_TokenRefreshInterceptor(_dio, _storage));
   }
@@ -188,12 +218,14 @@ class ApiService {
       final details = error?['details'] as Map<String, dynamic>?;
       final String msg;
       if (details != null && details.isNotEmpty) {
-        msg = details.entries.map((e) {
-          final msgs = e.value is List
-              ? (e.value as List).map((v) => v.toString()).join(', ')
-              : e.value.toString();
-          return msgs;
-        }).join('\n');
+        msg = details.entries
+            .map((e) {
+              final msgs = e.value is List
+                  ? (e.value as List).map((v) => v.toString()).join(', ')
+                  : e.value.toString();
+              return msgs;
+            })
+            .join('\n');
       } else {
         msg = error?['errorMsg'] as String? ?? "Noma'lum xatolik yuz berdi";
       }
@@ -247,13 +279,25 @@ class ApiService {
     return UserModel.fromJson(data);
   }
 
+  Future<String> changeActiveRole(String token, String role) async {
+    debugPrint('=== API SERVICE: changeActiveRole role=$role ===');
+    final response = await _dio.put(
+      'users/me/change-role/',
+      data: {'active_role': role},
+      options: _auth(token),
+    );
+    final body = response.data as Map<String, dynamic>;
+    final data = body.containsKey('success') ? _unwrap(body) : body;
+    final activeRole = data is Map<String, dynamic>
+        ? data['active_role'] as String?
+        : null;
+    return activeRole == null || activeRole.isEmpty ? role : activeRole;
+  }
+
   // ── Expense Requests ─────────────────────────────────────────────────────
 
   Future<List<Map<String, dynamic>>> getExpenseRequests(String token) async {
-    final response = await _dio.get(
-      'expense-request/',
-      options: _auth(token),
-    );
+    final response = await _dio.get('expense-request/', options: _auth(token));
     final body = response.data as Map<String, dynamic>;
     final data = _unwrap(body);
     if (data is Map<String, dynamic>) {
@@ -294,7 +338,9 @@ class ApiService {
   Future<void> confirmPayroll(String token, int id) async {
     final response = await _dio.post(
       'payroll/confirm/',
-      data: {'payroll_ids': [id]},
+      data: {
+        'payroll_ids': [id],
+      },
       options: _auth(token),
     );
     final body = response.data as Map<String, dynamic>;
@@ -324,9 +370,13 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> getExpenseRequestDetail(
-      String token, int id) async {
-    final response =
-        await _dio.get('expense-request/$id/', options: _auth(token));
+    String token,
+    int id,
+  ) async {
+    final response = await _dio.get(
+      'expense-request/$id/',
+      options: _auth(token),
+    );
     final body = response.data as Map<String, dynamic>;
     return _unwrap(body) as Map<String, dynamic>;
   }
@@ -349,8 +399,45 @@ class ApiService {
     _unwrap(body);
   }
 
+  Future<Map<String, dynamic>> cancelExpenseRequest(
+    String token,
+    int id,
+    String reason,
+  ) async {
+    final response = await _dio.post(
+      'expense-request/$id/cancel/',
+      data: {'cancel_reason': reason},
+      options: _auth(token),
+    );
+    final body = response.data;
+    final isOk =
+        response.statusCode != null &&
+        response.statusCode! >= 200 &&
+        response.statusCode! < 300;
+    if (!isOk) {
+      if (body is Map<String, dynamic>) {
+        _unwrap(body);
+      }
+      throw ApiException(
+        "So'rovni rad etishda xatolik yuz berdi",
+        response.statusCode ?? 0,
+      );
+    }
+    if (body is Map<String, dynamic>) {
+      if (body.containsKey('success')) {
+        final data = _unwrap(body);
+        return data is Map<String, dynamic> ? data : {};
+      }
+      return body;
+    }
+    return {};
+  }
+
   Future<Map<String, dynamic>> updateExpenseRequest(
-      String token, int id, Map<String, dynamic> data) async {
+    String token,
+    int id,
+    Map<String, dynamic> data,
+  ) async {
     final response = await _dio.patch(
       'expense-request/$id/',
       data: data,
@@ -377,7 +464,9 @@ class ApiService {
   }
 
   Future<void> createExpenseRequest(
-      String token, Map<String, dynamic> data) async {
+    String token,
+    Map<String, dynamic> data,
+  ) async {
     try {
       final response = await _dio.post(
         'expense-request/',
@@ -432,7 +521,10 @@ class ApiService {
   }
 
   Future<void> updateTask(
-      String token, int id, Map<String, dynamic> data) async {
+    String token,
+    int id,
+    Map<String, dynamic> data,
+  ) async {
     final response = await _dio.patch(
       'tasks/$id/',
       data: data,
@@ -443,11 +535,11 @@ class ApiService {
   }
 
   Future<void> deleteTask(String token, int id) async {
-    final response =
-        await _dio.delete('tasks/$id/', options: _auth(token));
+    final response = await _dio.delete('tasks/$id/', options: _auth(token));
     if (response.statusCode != null &&
         response.statusCode! >= 200 &&
-        response.statusCode! < 300) return;
+        response.statusCode! < 300)
+      return;
     final body = response.data;
     if (body is Map<String, dynamic>) _unwrap(body);
   }

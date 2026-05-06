@@ -8,6 +8,7 @@ class AppColors extends ThemeExtension<AppColors> {
 
   // ── Background ────────────────────────────────────────────────────────
   final Color backgroundBase;
+  final Color backgroundBase2;
   final Color backgroundElevation1;
   final Color backgroundElevation1Alt;
   final Color backgroundElevation2;
@@ -60,6 +61,7 @@ class AppColors extends ThemeExtension<AppColors> {
 
   // ── Success ───────────────────────────────────────────────────────────
   final Color successStrong;
+  final Color successPrimary;
   final Color successSub;
   final Color successSoft;
   final Color successDisabled;
@@ -72,6 +74,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.black,
     required this.shadow,
     required this.backgroundBase,
+    required this.backgroundBase2,
     required this.backgroundElevation1,
     required this.backgroundElevation1Alt,
     required this.backgroundElevation2,
@@ -110,6 +113,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.errorSoft,
     required this.errorDisabled,
     required this.successStrong,
+    required this.successPrimary,
     required this.successSub,
     required this.successSoft,
     required this.successDisabled,
@@ -121,6 +125,7 @@ class AppColors extends ThemeExtension<AppColors> {
     black: Color(0xFF000000),
     shadow: Color(0x1F000000), // alpha 0.12
     backgroundBase: Color(0xFFFFFFFF),
+    backgroundBase2: Color(0xFFFFFFFF),
     backgroundElevation1: Color(0xFFF8F9FC),
     backgroundElevation1Alt: Color(0xFFF1F3F9),
     backgroundElevation2: Color(0xFFE9ECF5),
@@ -159,6 +164,7 @@ class AppColors extends ThemeExtension<AppColors> {
     errorSoft: Color(0xFF2E1A1A),
     errorDisabled: Color(0xFFF8D7DA),
     successStrong: Color(0xFF22C55E),
+    successPrimary: Color(0xFF02D15C),
     successSub: Color(0xFF4ADE80),
     successSoft: Color(0xFFDCFCE7),
     successDisabled: Color(0xFFF0FDF4),
@@ -170,6 +176,7 @@ class AppColors extends ThemeExtension<AppColors> {
     black: Color(0xFF000000),
     shadow: Color(0x3D000000), // alpha 0.24
     backgroundBase: Color(0xFF000000),
+    backgroundBase2: Color(0xFF111111),
     backgroundElevation1: Color(0xFF191A1A),
     backgroundElevation1Alt: Color(0xFF222323),
     backgroundElevation2: Color(0xFFE9ECF5),
@@ -208,6 +215,7 @@ class AppColors extends ThemeExtension<AppColors> {
     errorSoft: Color(0xFFFFF2F2),
     errorDisabled: Color(0xFF402323),
     successStrong: Color(0xFF22C55E),
+    successPrimary: Color(0xFF02D15C),
     successSub: Color(0xFF4ADE80),
     successSoft: Color(0xFF142E1B),
     successDisabled: Color(0xFF1B3D24),
@@ -220,7 +228,9 @@ class AppColors extends ThemeExtension<AppColors> {
 
   /// Xarajatlar AppBar filtr/bildirishnoma tugmasi foni (light: `backgroundElevation2`, dark: `strokeSub`).
   Color get expenseAppBarFilterSurface =>
-      backgroundBase.computeLuminance() < 0.5 ? strokeSub : backgroundElevation2;
+      backgroundBase.computeLuminance() < 0.5
+      ? strokeSub
+      : backgroundElevation2;
 
   @override
   AppColors copyWith({
@@ -228,6 +238,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? black,
     Color? shadow,
     Color? backgroundBase,
+    Color? backgroundBase2,
     Color? backgroundElevation1,
     Color? backgroundElevation1Alt,
     Color? backgroundElevation2,
@@ -266,6 +277,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? errorSoft,
     Color? errorDisabled,
     Color? successStrong,
+    Color? successPrimary,
     Color? successSub,
     Color? successSoft,
     Color? successDisabled,
@@ -275,6 +287,7 @@ class AppColors extends ThemeExtension<AppColors> {
     black: black ?? this.black,
     shadow: shadow ?? this.shadow,
     backgroundBase: backgroundBase ?? this.backgroundBase,
+    backgroundBase2: backgroundBase2 ?? this.backgroundBase2,
     backgroundElevation1: backgroundElevation1 ?? this.backgroundElevation1,
     backgroundElevation1Alt:
         backgroundElevation1Alt ?? this.backgroundElevation1Alt,
@@ -316,6 +329,7 @@ class AppColors extends ThemeExtension<AppColors> {
     errorSoft: errorSoft ?? this.errorSoft,
     errorDisabled: errorDisabled ?? this.errorDisabled,
     successStrong: successStrong ?? this.successStrong,
+    successPrimary: successPrimary ?? this.successPrimary,
     successSub: successSub ?? this.successSub,
     successSoft: successSoft ?? this.successSoft,
     successDisabled: successDisabled ?? this.successDisabled,
@@ -330,6 +344,7 @@ class AppColors extends ThemeExtension<AppColors> {
       black: Color.lerp(black, other.black, t)!,
       shadow: Color.lerp(shadow, other.shadow, t)!,
       backgroundBase: Color.lerp(backgroundBase, other.backgroundBase, t)!,
+      backgroundBase2: Color.lerp(backgroundBase2, other.backgroundBase2, t)!,
       backgroundElevation1: Color.lerp(
         backgroundElevation1,
         other.backgroundElevation1,
@@ -392,6 +407,7 @@ class AppColors extends ThemeExtension<AppColors> {
       errorSoft: Color.lerp(errorSoft, other.errorSoft, t)!,
       errorDisabled: Color.lerp(errorDisabled, other.errorDisabled, t)!,
       successStrong: Color.lerp(successStrong, other.successStrong, t)!,
+      successPrimary: Color.lerp(successPrimary, other.successPrimary, t)!,
       successSub: Color.lerp(successSub, other.successSub, t)!,
       successSoft: Color.lerp(successSoft, other.successSoft, t)!,
       successDisabled: Color.lerp(successDisabled, other.successDisabled, t)!,
